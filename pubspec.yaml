@@ -23,8 +23,6 @@ dependencies:
   image_picker: ^1.0.7
   file_picker: ^8.1.2
   path_provider: ^2.1.2
-  firebase_core: ^2.32.0
-  firebase_messaging: ^14.7.10
   flutter_local_notifications: ^14.0.0
   # permission_handler: ^11.3.0  # Removed due to Windows build issues
   video_player: ^2.8.2
