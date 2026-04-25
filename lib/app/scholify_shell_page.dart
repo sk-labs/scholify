@@ -388,6 +388,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     _selectedIndex = index;
                   });
                 },
+                scrollable: true,
                 labelType: NavigationRailLabelType.all,
                 destinations: [
                   for (final destination in destinations)

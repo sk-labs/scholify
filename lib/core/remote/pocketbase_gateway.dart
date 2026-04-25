@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:pocketbase/pocketbase.dart';
 
 import '../auth/auth_session.dart';
@@ -48,8 +50,10 @@ class PocketbaseGateway {
   static const String studentExamMarksCollection = 'student_exam_marks';
 
   final PocketBase _client;
+  String? _lastSignInError;
 
   PocketBase get client => _client;
+  String? get lastSignInError => _lastSignInError;
 
   bool get isAuthenticated => _client.authStore.isValid;
   String? get currentAuthToken => _client.authStore.token;
@@ -78,10 +82,100 @@ class PocketbaseGateway {
     required String identity,
     required String password,
   }) async {
+    _lastSignInError = null;
     try {
-      await _client.collection('users').authWithPassword(identity, password);
-      return currentSession();
-    } catch (_) {
+      final authResult = await _client
+          .collection('users')
+          .authWithPassword(identity, password);
+
+      // Prefer the direct auth response record for tenant mapping. This avoids
+      // edge cases where authStore.model doesn't yet expose custom fields.
+      final authRecord = _recordToMap(authResult.record);
+      if (authRecord != null) {
+        final responseSession = _sessionFromModel(authRecord);
+        if (responseSession != null) {
+          return responseSession;
+        }
+      }
+
+      final authUserId = (authResult.record?.id ?? '').trim();
+      if (authUserId.isNotEmpty) {
+        try {
+          final record = await _client.collection('users').getOne(authUserId);
+          final recordJson = _recordToMap(record);
+          if (recordJson != null) {
+            final fetchedSession = _sessionFromModel(recordJson);
+            if (fetchedSession != null) {
+              return fetchedSession;
+            }
+          }
+        } catch (error) {
+          _lastSignInError = 'Unable to load authenticated user by record id: $error';
+          // Fall through to authStore/session fallback.
+        }
+      }
+
+      final tokenUserId = _extractUserIdFromJwt(authResult.token);
+      if (tokenUserId.isNotEmpty) {
+        try {
+          final tokenRecord = await _client.collection('users').getOne(tokenUserId);
+          final tokenRecordJson = _recordToMap(tokenRecord);
+          if (tokenRecordJson != null) {
+            final tokenSession = _sessionFromModel(tokenRecordJson);
+            if (tokenSession != null) {
+              return tokenSession;
+            }
+          }
+        } catch (error) {
+          _lastSignInError = 'Unable to load authenticated user by token id: $error';
+          // Fall through to the remaining fallback strategies.
+        }
+      }
+
+      final escapedIdentity = identity.replaceAll('"', r'\"');
+      try {
+        final identityRecord = await _client
+            .collection('users')
+            .getFirstListItem('email = "$escapedIdentity"');
+        final identityRecordJson = _recordToMap(identityRecord);
+        if (identityRecordJson != null) {
+          final identitySession = _sessionFromModel(identityRecordJson);
+          if (identitySession != null) {
+            return identitySession;
+          }
+        }
+      } catch (error) {
+        _lastSignInError = 'Unable to resolve user by identity lookup: $error';
+        // Fall through to authStore/session fallback.
+      }
+
+      final session = currentSession();
+      if (session != null) {
+        return session;
+      }
+
+      // Some PocketBase auth model snapshots may omit custom fields used for
+      // tenant mapping. Fall back to loading the authenticated user record.
+      final authModel = _recordToMap(_client.authStore.model);
+      final userId =
+          authModel == null ? '' : _stringFrom(authModel, ['id', 'user_id']);
+      if (userId.isNotEmpty) {
+        try {
+          final record = await _client.collection('users').getOne(userId);
+          final recordJson = _recordToMap(record);
+          if (recordJson != null) {
+            return _sessionFromModel(recordJson);
+          }
+        } catch (error) {
+          _lastSignInError = 'Unable to load authenticated user from auth store: $error';
+          // Keep null return behavior for the caller to surface a login error.
+        }
+      }
+
+      _lastSignInError ??= 'Authenticated, but tenant session could not be resolved.';
+      return null;
+    } catch (error) {
+      _lastSignInError = 'Sign-in request failed: $error';
       return null;
     }
   }
@@ -3021,5 +3115,36 @@ class PocketbaseGateway {
     }
 
     return null;
+  }
+
+  String _extractUserIdFromJwt(String token) {
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) return '';
+
+    try {
+      final parts = trimmed.split('.');
+      if (parts.length < 2) return '';
+
+      final normalized = base64Url.normalize(parts[1]);
+      final payloadBytes = base64Url.decode(normalized);
+      final payload = jsonDecode(utf8.decode(payloadBytes));
+      if (payload is Map<String, dynamic>) {
+        final id = payload['id'];
+        if (id != null) {
+          final resolved = id.toString().trim();
+          if (resolved.isNotEmpty) return resolved;
+        }
+      } else if (payload is Map) {
+        final id = payload['id'];
+        if (id != null) {
+          final resolved = id.toString().trim();
+          if (resolved.isNotEmpty) return resolved;
+        }
+      }
+    } catch (_) {
+      return '';
+    }
+
+    return '';
   }
 }

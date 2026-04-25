@@ -78,7 +78,13 @@ class SessionManager extends ChangeNotifier {
       );
 
       if (session == null) {
-        _errorMessage = 'Sign in failed. Check credentials and tenant mapping.';
+        final details = gateway.lastSignInError?.trim();
+        if (details != null && details.isNotEmpty) {
+          _errorMessage = 'Sign in failed. $details';
+        } else {
+          _errorMessage =
+              'Sign in failed. Check credentials and tenant mapping.';
+        }
         return false;
       }
 
