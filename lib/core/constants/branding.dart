@@ -4,5 +4,5 @@ class AppBranding {
       'Desktop-first multi-tenant school platform';
 
   // Replace with your production PocketBase URL for Scholify.
-  static const String defaultPocketBaseUrl = 'http://127.0.0.1:8090';
+  static const String defaultPocketBaseUrl = 'https://vm-hms.lixcure.com';
 }
