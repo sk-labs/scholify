@@ -14,57 +14,57 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
 
 ### Phase 1: Foundation (Week 1-2)
 
-- [~] 1. Create new Drift tables and generate code
-  - [-] 1.1 Create AuditLogEntries table in Drift schema
+- [x] 1. Create new Drift tables and generate code
+  - [x] 1.1 Create AuditLogEntries table in Drift schema
     - Add table definition with columns: id, tenantId, actorId, actorRole, entityType, entityId, operation, changedFields, timestamp
     - Add indexes: (tenantId, timestamp DESC), (entityType, timestamp DESC), (actorId, timestamp DESC)
     - _Requirements: H3.1, H3.2_
   
-  - [~] 1.2 Create PlanUpgradeRequestEntries table in Drift schema
+  - [x] 1.2 Create PlanUpgradeRequestEntries table in Drift schema
     - Add table definition with columns: id, tenantId, currentPlan, requestedPlan, message, status, reviewedBy, createdAt, reviewedAt, updatedAt
     - Add indexes: (tenantId, status), (status, createdAt DESC)
     - _Requirements: B2.4_
   
-  - [~] 1.3 Create TenantBrandingEntries table in Drift schema
+  - [x] 1.3 Create TenantBrandingEntries table in Drift schema
     - Add table definition with columns: id, tenantId, displayName, logoBase64, updatedAt
     - Add index: (tenantId)
     - _Requirements: B3.2_
   
-  - [~] 1.4 Run Drift code generation
+  - [x] 1.4 Run Drift code generation
     - Execute `dart run build_runner build --delete-conflicting-outputs`
     - Verify generated DAO classes compile without errors
     - _Requirements: H3.1, B2.4, B3.2_
 
 - [~] 2. Implement core services
-  - [~] 2.1 Implement AuditLogService
+  - [x] 2.1 Implement AuditLogService
     - Create service class with logWrite method
     - Integrate with TenantContext to capture actor information
     - Generate JSON snapshot of changed fields
     - Write AuditLogEntry to Drift and enqueue for sync
     - _Requirements: H3.1, H3.2_
   
-  - [~] 2.2 Write property test for AuditLogService
+  - [x] 2.2 Write property test for AuditLogService
     - **Property 6: Audit log append-only invariant**
     - **Property 7: Audit log entry completeness**
     - **Validates: Requirements H3.2, H3.3**
   
-  - [~] 2.3 Implement LicenseAlertService
+  - [x] 2.3 Implement LicenseAlertService
     - Create service class with watchAlerts and computeAlerts methods
     - Implement alert tier computation logic (30d, 14d, 7d, expired)
     - Provide reactive stream of alert states
     - _Requirements: H4.1, H4.2, H4.3, H4.4, H4.5_
   
-  - [~] 2.4 Write property test for LicenseAlertService
+  - [x] 2.4 Write property test for LicenseAlertService
     - **Property 9: License expiry alert tier computation**
     - **Validates: Requirements H4.1, H4.2, H4.3, H4.4, H4.5, H4.6**
   
-  - [~] 2.5 Implement SeatLimitEnforcementService
+  - [x] 2.5 Implement SeatLimitEnforcementService
     - Create service class with checkSeatLimit method
     - Query active enrollment count and compare against license seat limit
     - Throw SeatLimitExceededException when limit reached
     - _Requirements: A3.1, A3.2_
   
-  - [~] 2.6 Write property test for SeatLimitEnforcementService
+  - [x] 2.6 Write property test for SeatLimitEnforcementService
     - **Property 11: Seat limit enforcement boundary**
     - **Property 12: Enrollment count consistency**
     - **Validates: Requirements A3.2, A3.6**

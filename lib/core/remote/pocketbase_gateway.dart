@@ -51,6 +51,7 @@ class PocketbaseGateway {
 
   final PocketBase _client;
   String? _lastSignInError;
+  Map<String, dynamic>? _mockAuthModel; // For testing support
 
   PocketBase get client => _client;
   String? get lastSignInError => _lastSignInError;
@@ -58,7 +59,7 @@ class PocketbaseGateway {
   bool get isAuthenticated => _client.authStore.isValid;
   String? get currentAuthToken => _client.authStore.token;
   Map<String, dynamic>? get currentAuthModelJson =>
-      _recordToMap(_client.authStore.model);
+      _mockAuthModel ?? _recordToMap(_client.authStore.model);
 
   void restoreAuthSnapshot({
     required String token,
@@ -3146,5 +3147,18 @@ class PocketbaseGateway {
     }
 
     return '';
+  }
+
+  // ── Testing Support ──────────────────────────────────────────────────────
+
+  /// Sets a mock auth model for testing purposes.
+  /// This allows tests to simulate authenticated users without actual PocketBase auth.
+  void setMockAuthModel(Map<String, dynamic> model) {
+    _mockAuthModel = model;
+  }
+
+  /// Clears the mock auth model.
+  void clearMockAuthModel() {
+    _mockAuthModel = null;
   }
 }

@@ -25271,6 +25271,1326 @@ class SyncCheckpointEntriesCompanion
   }
 }
 
+class $AuditLogEntriesTable extends AuditLogEntries
+    with TableInfo<$AuditLogEntriesTable, AuditLogEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AuditLogEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _tenantIdMeta =
+      const VerificationMeta('tenantId');
+  @override
+  late final GeneratedColumn<String> tenantId = GeneratedColumn<String>(
+      'tenant_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _actorIdMeta =
+      const VerificationMeta('actorId');
+  @override
+  late final GeneratedColumn<String> actorId = GeneratedColumn<String>(
+      'actor_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _actorRoleMeta =
+      const VerificationMeta('actorRole');
+  @override
+  late final GeneratedColumn<String> actorRole = GeneratedColumn<String>(
+      'actor_role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _entityTypeMeta =
+      const VerificationMeta('entityType');
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+      'entity_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+      'entity_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _operationMeta =
+      const VerificationMeta('operation');
+  @override
+  late final GeneratedColumn<String> operation = GeneratedColumn<String>(
+      'operation', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _changedFieldsMeta =
+      const VerificationMeta('changedFields');
+  @override
+  late final GeneratedColumn<String> changedFields = GeneratedColumn<String>(
+      'changed_fields', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _timestampMeta =
+      const VerificationMeta('timestamp');
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+      'timestamp', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        tenantId,
+        actorId,
+        actorRole,
+        entityType,
+        entityId,
+        operation,
+        changedFields,
+        timestamp
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'audit_log_entries';
+  @override
+  VerificationContext validateIntegrity(Insertable<AuditLogEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('tenant_id')) {
+      context.handle(_tenantIdMeta,
+          tenantId.isAcceptableOrUnknown(data['tenant_id']!, _tenantIdMeta));
+    } else if (isInserting) {
+      context.missing(_tenantIdMeta);
+    }
+    if (data.containsKey('actor_id')) {
+      context.handle(_actorIdMeta,
+          actorId.isAcceptableOrUnknown(data['actor_id']!, _actorIdMeta));
+    } else if (isInserting) {
+      context.missing(_actorIdMeta);
+    }
+    if (data.containsKey('actor_role')) {
+      context.handle(_actorRoleMeta,
+          actorRole.isAcceptableOrUnknown(data['actor_role']!, _actorRoleMeta));
+    } else if (isInserting) {
+      context.missing(_actorRoleMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+          _entityTypeMeta,
+          entityType.isAcceptableOrUnknown(
+              data['entity_type']!, _entityTypeMeta));
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('operation')) {
+      context.handle(_operationMeta,
+          operation.isAcceptableOrUnknown(data['operation']!, _operationMeta));
+    } else if (isInserting) {
+      context.missing(_operationMeta);
+    }
+    if (data.containsKey('changed_fields')) {
+      context.handle(
+          _changedFieldsMeta,
+          changedFields.isAcceptableOrUnknown(
+              data['changed_fields']!, _changedFieldsMeta));
+    } else if (isInserting) {
+      context.missing(_changedFieldsMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(_timestampMeta,
+          timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AuditLogEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AuditLogEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      tenantId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tenant_id'])!,
+      actorId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}actor_id'])!,
+      actorRole: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}actor_role'])!,
+      entityType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_type'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_id'])!,
+      operation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}operation'])!,
+      changedFields: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}changed_fields'])!,
+      timestamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}timestamp'])!,
+    );
+  }
+
+  @override
+  $AuditLogEntriesTable createAlias(String alias) {
+    return $AuditLogEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class AuditLogEntry extends DataClass implements Insertable<AuditLogEntry> {
+  final String id;
+  final String tenantId;
+  final String actorId;
+  final String actorRole;
+  final String entityType;
+  final String entityId;
+  final String operation;
+  final String changedFields;
+  final DateTime timestamp;
+  const AuditLogEntry(
+      {required this.id,
+      required this.tenantId,
+      required this.actorId,
+      required this.actorRole,
+      required this.entityType,
+      required this.entityId,
+      required this.operation,
+      required this.changedFields,
+      required this.timestamp});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['tenant_id'] = Variable<String>(tenantId);
+    map['actor_id'] = Variable<String>(actorId);
+    map['actor_role'] = Variable<String>(actorRole);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    map['operation'] = Variable<String>(operation);
+    map['changed_fields'] = Variable<String>(changedFields);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  AuditLogEntriesCompanion toCompanion(bool nullToAbsent) {
+    return AuditLogEntriesCompanion(
+      id: Value(id),
+      tenantId: Value(tenantId),
+      actorId: Value(actorId),
+      actorRole: Value(actorRole),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      operation: Value(operation),
+      changedFields: Value(changedFields),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AuditLogEntry(
+      id: serializer.fromJson<String>(json['id']),
+      tenantId: serializer.fromJson<String>(json['tenantId']),
+      actorId: serializer.fromJson<String>(json['actorId']),
+      actorRole: serializer.fromJson<String>(json['actorRole']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      operation: serializer.fromJson<String>(json['operation']),
+      changedFields: serializer.fromJson<String>(json['changedFields']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tenantId': serializer.toJson<String>(tenantId),
+      'actorId': serializer.toJson<String>(actorId),
+      'actorRole': serializer.toJson<String>(actorRole),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+      'operation': serializer.toJson<String>(operation),
+      'changedFields': serializer.toJson<String>(changedFields),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  AuditLogEntry copyWith(
+          {String? id,
+          String? tenantId,
+          String? actorId,
+          String? actorRole,
+          String? entityType,
+          String? entityId,
+          String? operation,
+          String? changedFields,
+          DateTime? timestamp}) =>
+      AuditLogEntry(
+        id: id ?? this.id,
+        tenantId: tenantId ?? this.tenantId,
+        actorId: actorId ?? this.actorId,
+        actorRole: actorRole ?? this.actorRole,
+        entityType: entityType ?? this.entityType,
+        entityId: entityId ?? this.entityId,
+        operation: operation ?? this.operation,
+        changedFields: changedFields ?? this.changedFields,
+        timestamp: timestamp ?? this.timestamp,
+      );
+  AuditLogEntry copyWithCompanion(AuditLogEntriesCompanion data) {
+    return AuditLogEntry(
+      id: data.id.present ? data.id.value : this.id,
+      tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
+      actorId: data.actorId.present ? data.actorId.value : this.actorId,
+      actorRole: data.actorRole.present ? data.actorRole.value : this.actorRole,
+      entityType:
+          data.entityType.present ? data.entityType.value : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      operation: data.operation.present ? data.operation.value : this.operation,
+      changedFields: data.changedFields.present
+          ? data.changedFields.value
+          : this.changedFields,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuditLogEntry(')
+          ..write('id: $id, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('actorId: $actorId, ')
+          ..write('actorRole: $actorRole, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('operation: $operation, ')
+          ..write('changedFields: $changedFields, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tenantId, actorId, actorRole, entityType,
+      entityId, operation, changedFields, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AuditLogEntry &&
+          other.id == this.id &&
+          other.tenantId == this.tenantId &&
+          other.actorId == this.actorId &&
+          other.actorRole == this.actorRole &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.operation == this.operation &&
+          other.changedFields == this.changedFields &&
+          other.timestamp == this.timestamp);
+}
+
+class AuditLogEntriesCompanion extends UpdateCompanion<AuditLogEntry> {
+  final Value<String> id;
+  final Value<String> tenantId;
+  final Value<String> actorId;
+  final Value<String> actorRole;
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<String> operation;
+  final Value<String> changedFields;
+  final Value<DateTime> timestamp;
+  final Value<int> rowid;
+  const AuditLogEntriesCompanion({
+    this.id = const Value.absent(),
+    this.tenantId = const Value.absent(),
+    this.actorId = const Value.absent(),
+    this.actorRole = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.operation = const Value.absent(),
+    this.changedFields = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AuditLogEntriesCompanion.insert({
+    required String id,
+    required String tenantId,
+    required String actorId,
+    required String actorRole,
+    required String entityType,
+    required String entityId,
+    required String operation,
+    required String changedFields,
+    this.timestamp = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        tenantId = Value(tenantId),
+        actorId = Value(actorId),
+        actorRole = Value(actorRole),
+        entityType = Value(entityType),
+        entityId = Value(entityId),
+        operation = Value(operation),
+        changedFields = Value(changedFields);
+  static Insertable<AuditLogEntry> custom({
+    Expression<String>? id,
+    Expression<String>? tenantId,
+    Expression<String>? actorId,
+    Expression<String>? actorRole,
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<String>? operation,
+    Expression<String>? changedFields,
+    Expression<DateTime>? timestamp,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tenantId != null) 'tenant_id': tenantId,
+      if (actorId != null) 'actor_id': actorId,
+      if (actorRole != null) 'actor_role': actorRole,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (operation != null) 'operation': operation,
+      if (changedFields != null) 'changed_fields': changedFields,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AuditLogEntriesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? tenantId,
+      Value<String>? actorId,
+      Value<String>? actorRole,
+      Value<String>? entityType,
+      Value<String>? entityId,
+      Value<String>? operation,
+      Value<String>? changedFields,
+      Value<DateTime>? timestamp,
+      Value<int>? rowid}) {
+    return AuditLogEntriesCompanion(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      actorId: actorId ?? this.actorId,
+      actorRole: actorRole ?? this.actorRole,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      operation: operation ?? this.operation,
+      changedFields: changedFields ?? this.changedFields,
+      timestamp: timestamp ?? this.timestamp,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tenantId.present) {
+      map['tenant_id'] = Variable<String>(tenantId.value);
+    }
+    if (actorId.present) {
+      map['actor_id'] = Variable<String>(actorId.value);
+    }
+    if (actorRole.present) {
+      map['actor_role'] = Variable<String>(actorRole.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (operation.present) {
+      map['operation'] = Variable<String>(operation.value);
+    }
+    if (changedFields.present) {
+      map['changed_fields'] = Variable<String>(changedFields.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuditLogEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('actorId: $actorId, ')
+          ..write('actorRole: $actorRole, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('operation: $operation, ')
+          ..write('changedFields: $changedFields, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlanUpgradeRequestEntriesTable extends PlanUpgradeRequestEntries
+    with TableInfo<$PlanUpgradeRequestEntriesTable, PlanUpgradeRequestEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlanUpgradeRequestEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _tenantIdMeta =
+      const VerificationMeta('tenantId');
+  @override
+  late final GeneratedColumn<String> tenantId = GeneratedColumn<String>(
+      'tenant_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES tenant_records (id)'));
+  static const VerificationMeta _currentPlanMeta =
+      const VerificationMeta('currentPlan');
+  @override
+  late final GeneratedColumn<String> currentPlan = GeneratedColumn<String>(
+      'current_plan', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _requestedPlanMeta =
+      const VerificationMeta('requestedPlan');
+  @override
+  late final GeneratedColumn<String> requestedPlan = GeneratedColumn<String>(
+      'requested_plan', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _messageMeta =
+      const VerificationMeta('message');
+  @override
+  late final GeneratedColumn<String> message = GeneratedColumn<String>(
+      'message', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _reviewedByMeta =
+      const VerificationMeta('reviewedBy');
+  @override
+  late final GeneratedColumn<String> reviewedBy = GeneratedColumn<String>(
+      'reviewed_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _reviewedAtMeta =
+      const VerificationMeta('reviewedAt');
+  @override
+  late final GeneratedColumn<DateTime> reviewedAt = GeneratedColumn<DateTime>(
+      'reviewed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        tenantId,
+        currentPlan,
+        requestedPlan,
+        message,
+        status,
+        reviewedBy,
+        createdAt,
+        reviewedAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'plan_upgrade_request_entries';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<PlanUpgradeRequestEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('tenant_id')) {
+      context.handle(_tenantIdMeta,
+          tenantId.isAcceptableOrUnknown(data['tenant_id']!, _tenantIdMeta));
+    } else if (isInserting) {
+      context.missing(_tenantIdMeta);
+    }
+    if (data.containsKey('current_plan')) {
+      context.handle(
+          _currentPlanMeta,
+          currentPlan.isAcceptableOrUnknown(
+              data['current_plan']!, _currentPlanMeta));
+    } else if (isInserting) {
+      context.missing(_currentPlanMeta);
+    }
+    if (data.containsKey('requested_plan')) {
+      context.handle(
+          _requestedPlanMeta,
+          requestedPlan.isAcceptableOrUnknown(
+              data['requested_plan']!, _requestedPlanMeta));
+    } else if (isInserting) {
+      context.missing(_requestedPlanMeta);
+    }
+    if (data.containsKey('message')) {
+      context.handle(_messageMeta,
+          message.isAcceptableOrUnknown(data['message']!, _messageMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('reviewed_by')) {
+      context.handle(
+          _reviewedByMeta,
+          reviewedBy.isAcceptableOrUnknown(
+              data['reviewed_by']!, _reviewedByMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('reviewed_at')) {
+      context.handle(
+          _reviewedAtMeta,
+          reviewedAt.isAcceptableOrUnknown(
+              data['reviewed_at']!, _reviewedAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlanUpgradeRequestEntry map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlanUpgradeRequestEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      tenantId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tenant_id'])!,
+      currentPlan: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}current_plan'])!,
+      requestedPlan: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}requested_plan'])!,
+      message: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}message']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      reviewedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reviewed_by']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      reviewedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}reviewed_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $PlanUpgradeRequestEntriesTable createAlias(String alias) {
+    return $PlanUpgradeRequestEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class PlanUpgradeRequestEntry extends DataClass
+    implements Insertable<PlanUpgradeRequestEntry> {
+  final String id;
+  final String tenantId;
+  final String currentPlan;
+  final String requestedPlan;
+  final String? message;
+  final String status;
+  final String? reviewedBy;
+  final DateTime createdAt;
+  final DateTime? reviewedAt;
+  final DateTime updatedAt;
+  const PlanUpgradeRequestEntry(
+      {required this.id,
+      required this.tenantId,
+      required this.currentPlan,
+      required this.requestedPlan,
+      this.message,
+      required this.status,
+      this.reviewedBy,
+      required this.createdAt,
+      this.reviewedAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['tenant_id'] = Variable<String>(tenantId);
+    map['current_plan'] = Variable<String>(currentPlan);
+    map['requested_plan'] = Variable<String>(requestedPlan);
+    if (!nullToAbsent || message != null) {
+      map['message'] = Variable<String>(message);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || reviewedBy != null) {
+      map['reviewed_by'] = Variable<String>(reviewedBy);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || reviewedAt != null) {
+      map['reviewed_at'] = Variable<DateTime>(reviewedAt);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PlanUpgradeRequestEntriesCompanion toCompanion(bool nullToAbsent) {
+    return PlanUpgradeRequestEntriesCompanion(
+      id: Value(id),
+      tenantId: Value(tenantId),
+      currentPlan: Value(currentPlan),
+      requestedPlan: Value(requestedPlan),
+      message: message == null && nullToAbsent
+          ? const Value.absent()
+          : Value(message),
+      status: Value(status),
+      reviewedBy: reviewedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reviewedBy),
+      createdAt: Value(createdAt),
+      reviewedAt: reviewedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reviewedAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PlanUpgradeRequestEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlanUpgradeRequestEntry(
+      id: serializer.fromJson<String>(json['id']),
+      tenantId: serializer.fromJson<String>(json['tenantId']),
+      currentPlan: serializer.fromJson<String>(json['currentPlan']),
+      requestedPlan: serializer.fromJson<String>(json['requestedPlan']),
+      message: serializer.fromJson<String?>(json['message']),
+      status: serializer.fromJson<String>(json['status']),
+      reviewedBy: serializer.fromJson<String?>(json['reviewedBy']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      reviewedAt: serializer.fromJson<DateTime?>(json['reviewedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tenantId': serializer.toJson<String>(tenantId),
+      'currentPlan': serializer.toJson<String>(currentPlan),
+      'requestedPlan': serializer.toJson<String>(requestedPlan),
+      'message': serializer.toJson<String?>(message),
+      'status': serializer.toJson<String>(status),
+      'reviewedBy': serializer.toJson<String?>(reviewedBy),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'reviewedAt': serializer.toJson<DateTime?>(reviewedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PlanUpgradeRequestEntry copyWith(
+          {String? id,
+          String? tenantId,
+          String? currentPlan,
+          String? requestedPlan,
+          Value<String?> message = const Value.absent(),
+          String? status,
+          Value<String?> reviewedBy = const Value.absent(),
+          DateTime? createdAt,
+          Value<DateTime?> reviewedAt = const Value.absent(),
+          DateTime? updatedAt}) =>
+      PlanUpgradeRequestEntry(
+        id: id ?? this.id,
+        tenantId: tenantId ?? this.tenantId,
+        currentPlan: currentPlan ?? this.currentPlan,
+        requestedPlan: requestedPlan ?? this.requestedPlan,
+        message: message.present ? message.value : this.message,
+        status: status ?? this.status,
+        reviewedBy: reviewedBy.present ? reviewedBy.value : this.reviewedBy,
+        createdAt: createdAt ?? this.createdAt,
+        reviewedAt: reviewedAt.present ? reviewedAt.value : this.reviewedAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  PlanUpgradeRequestEntry copyWithCompanion(
+      PlanUpgradeRequestEntriesCompanion data) {
+    return PlanUpgradeRequestEntry(
+      id: data.id.present ? data.id.value : this.id,
+      tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
+      currentPlan:
+          data.currentPlan.present ? data.currentPlan.value : this.currentPlan,
+      requestedPlan: data.requestedPlan.present
+          ? data.requestedPlan.value
+          : this.requestedPlan,
+      message: data.message.present ? data.message.value : this.message,
+      status: data.status.present ? data.status.value : this.status,
+      reviewedBy:
+          data.reviewedBy.present ? data.reviewedBy.value : this.reviewedBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      reviewedAt:
+          data.reviewedAt.present ? data.reviewedAt.value : this.reviewedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanUpgradeRequestEntry(')
+          ..write('id: $id, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('currentPlan: $currentPlan, ')
+          ..write('requestedPlan: $requestedPlan, ')
+          ..write('message: $message, ')
+          ..write('status: $status, ')
+          ..write('reviewedBy: $reviewedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('reviewedAt: $reviewedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tenantId, currentPlan, requestedPlan,
+      message, status, reviewedBy, createdAt, reviewedAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlanUpgradeRequestEntry &&
+          other.id == this.id &&
+          other.tenantId == this.tenantId &&
+          other.currentPlan == this.currentPlan &&
+          other.requestedPlan == this.requestedPlan &&
+          other.message == this.message &&
+          other.status == this.status &&
+          other.reviewedBy == this.reviewedBy &&
+          other.createdAt == this.createdAt &&
+          other.reviewedAt == this.reviewedAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PlanUpgradeRequestEntriesCompanion
+    extends UpdateCompanion<PlanUpgradeRequestEntry> {
+  final Value<String> id;
+  final Value<String> tenantId;
+  final Value<String> currentPlan;
+  final Value<String> requestedPlan;
+  final Value<String?> message;
+  final Value<String> status;
+  final Value<String?> reviewedBy;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> reviewedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PlanUpgradeRequestEntriesCompanion({
+    this.id = const Value.absent(),
+    this.tenantId = const Value.absent(),
+    this.currentPlan = const Value.absent(),
+    this.requestedPlan = const Value.absent(),
+    this.message = const Value.absent(),
+    this.status = const Value.absent(),
+    this.reviewedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.reviewedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlanUpgradeRequestEntriesCompanion.insert({
+    required String id,
+    required String tenantId,
+    required String currentPlan,
+    required String requestedPlan,
+    this.message = const Value.absent(),
+    this.status = const Value.absent(),
+    this.reviewedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.reviewedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        tenantId = Value(tenantId),
+        currentPlan = Value(currentPlan),
+        requestedPlan = Value(requestedPlan);
+  static Insertable<PlanUpgradeRequestEntry> custom({
+    Expression<String>? id,
+    Expression<String>? tenantId,
+    Expression<String>? currentPlan,
+    Expression<String>? requestedPlan,
+    Expression<String>? message,
+    Expression<String>? status,
+    Expression<String>? reviewedBy,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? reviewedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tenantId != null) 'tenant_id': tenantId,
+      if (currentPlan != null) 'current_plan': currentPlan,
+      if (requestedPlan != null) 'requested_plan': requestedPlan,
+      if (message != null) 'message': message,
+      if (status != null) 'status': status,
+      if (reviewedBy != null) 'reviewed_by': reviewedBy,
+      if (createdAt != null) 'created_at': createdAt,
+      if (reviewedAt != null) 'reviewed_at': reviewedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlanUpgradeRequestEntriesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? tenantId,
+      Value<String>? currentPlan,
+      Value<String>? requestedPlan,
+      Value<String?>? message,
+      Value<String>? status,
+      Value<String?>? reviewedBy,
+      Value<DateTime>? createdAt,
+      Value<DateTime?>? reviewedAt,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return PlanUpgradeRequestEntriesCompanion(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      currentPlan: currentPlan ?? this.currentPlan,
+      requestedPlan: requestedPlan ?? this.requestedPlan,
+      message: message ?? this.message,
+      status: status ?? this.status,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      createdAt: createdAt ?? this.createdAt,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tenantId.present) {
+      map['tenant_id'] = Variable<String>(tenantId.value);
+    }
+    if (currentPlan.present) {
+      map['current_plan'] = Variable<String>(currentPlan.value);
+    }
+    if (requestedPlan.present) {
+      map['requested_plan'] = Variable<String>(requestedPlan.value);
+    }
+    if (message.present) {
+      map['message'] = Variable<String>(message.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (reviewedBy.present) {
+      map['reviewed_by'] = Variable<String>(reviewedBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (reviewedAt.present) {
+      map['reviewed_at'] = Variable<DateTime>(reviewedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanUpgradeRequestEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('currentPlan: $currentPlan, ')
+          ..write('requestedPlan: $requestedPlan, ')
+          ..write('message: $message, ')
+          ..write('status: $status, ')
+          ..write('reviewedBy: $reviewedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('reviewedAt: $reviewedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TenantBrandingEntriesTable extends TenantBrandingEntries
+    with TableInfo<$TenantBrandingEntriesTable, TenantBrandingEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TenantBrandingEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _tenantIdMeta =
+      const VerificationMeta('tenantId');
+  @override
+  late final GeneratedColumn<String> tenantId = GeneratedColumn<String>(
+      'tenant_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES tenant_records (id)'));
+  static const VerificationMeta _displayNameMeta =
+      const VerificationMeta('displayName');
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+      'display_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _logoBase64Meta =
+      const VerificationMeta('logoBase64');
+  @override
+  late final GeneratedColumn<String> logoBase64 = GeneratedColumn<String>(
+      'logo_base64', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, tenantId, displayName, logoBase64, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tenant_branding_entries';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TenantBrandingEntry> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('tenant_id')) {
+      context.handle(_tenantIdMeta,
+          tenantId.isAcceptableOrUnknown(data['tenant_id']!, _tenantIdMeta));
+    } else if (isInserting) {
+      context.missing(_tenantIdMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+          _displayNameMeta,
+          displayName.isAcceptableOrUnknown(
+              data['display_name']!, _displayNameMeta));
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('logo_base64')) {
+      context.handle(
+          _logoBase64Meta,
+          logoBase64.isAcceptableOrUnknown(
+              data['logo_base64']!, _logoBase64Meta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TenantBrandingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TenantBrandingEntry(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      tenantId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tenant_id'])!,
+      displayName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}display_name'])!,
+      logoBase64: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}logo_base64']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $TenantBrandingEntriesTable createAlias(String alias) {
+    return $TenantBrandingEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class TenantBrandingEntry extends DataClass
+    implements Insertable<TenantBrandingEntry> {
+  final String id;
+  final String tenantId;
+  final String displayName;
+  final String? logoBase64;
+  final DateTime updatedAt;
+  const TenantBrandingEntry(
+      {required this.id,
+      required this.tenantId,
+      required this.displayName,
+      this.logoBase64,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['tenant_id'] = Variable<String>(tenantId);
+    map['display_name'] = Variable<String>(displayName);
+    if (!nullToAbsent || logoBase64 != null) {
+      map['logo_base64'] = Variable<String>(logoBase64);
+    }
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  TenantBrandingEntriesCompanion toCompanion(bool nullToAbsent) {
+    return TenantBrandingEntriesCompanion(
+      id: Value(id),
+      tenantId: Value(tenantId),
+      displayName: Value(displayName),
+      logoBase64: logoBase64 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(logoBase64),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory TenantBrandingEntry.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TenantBrandingEntry(
+      id: serializer.fromJson<String>(json['id']),
+      tenantId: serializer.fromJson<String>(json['tenantId']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      logoBase64: serializer.fromJson<String?>(json['logoBase64']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tenantId': serializer.toJson<String>(tenantId),
+      'displayName': serializer.toJson<String>(displayName),
+      'logoBase64': serializer.toJson<String?>(logoBase64),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  TenantBrandingEntry copyWith(
+          {String? id,
+          String? tenantId,
+          String? displayName,
+          Value<String?> logoBase64 = const Value.absent(),
+          DateTime? updatedAt}) =>
+      TenantBrandingEntry(
+        id: id ?? this.id,
+        tenantId: tenantId ?? this.tenantId,
+        displayName: displayName ?? this.displayName,
+        logoBase64: logoBase64.present ? logoBase64.value : this.logoBase64,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  TenantBrandingEntry copyWithCompanion(TenantBrandingEntriesCompanion data) {
+    return TenantBrandingEntry(
+      id: data.id.present ? data.id.value : this.id,
+      tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
+      displayName:
+          data.displayName.present ? data.displayName.value : this.displayName,
+      logoBase64:
+          data.logoBase64.present ? data.logoBase64.value : this.logoBase64,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TenantBrandingEntry(')
+          ..write('id: $id, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('displayName: $displayName, ')
+          ..write('logoBase64: $logoBase64, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, tenantId, displayName, logoBase64, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TenantBrandingEntry &&
+          other.id == this.id &&
+          other.tenantId == this.tenantId &&
+          other.displayName == this.displayName &&
+          other.logoBase64 == this.logoBase64 &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TenantBrandingEntriesCompanion
+    extends UpdateCompanion<TenantBrandingEntry> {
+  final Value<String> id;
+  final Value<String> tenantId;
+  final Value<String> displayName;
+  final Value<String?> logoBase64;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const TenantBrandingEntriesCompanion({
+    this.id = const Value.absent(),
+    this.tenantId = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.logoBase64 = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TenantBrandingEntriesCompanion.insert({
+    required String id,
+    required String tenantId,
+    required String displayName,
+    this.logoBase64 = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        tenantId = Value(tenantId),
+        displayName = Value(displayName);
+  static Insertable<TenantBrandingEntry> custom({
+    Expression<String>? id,
+    Expression<String>? tenantId,
+    Expression<String>? displayName,
+    Expression<String>? logoBase64,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tenantId != null) 'tenant_id': tenantId,
+      if (displayName != null) 'display_name': displayName,
+      if (logoBase64 != null) 'logo_base64': logoBase64,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TenantBrandingEntriesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? tenantId,
+      Value<String>? displayName,
+      Value<String?>? logoBase64,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return TenantBrandingEntriesCompanion(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      displayName: displayName ?? this.displayName,
+      logoBase64: logoBase64 ?? this.logoBase64,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tenantId.present) {
+      map['tenant_id'] = Variable<String>(tenantId.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (logoBase64.present) {
+      map['logo_base64'] = Variable<String>(logoBase64.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TenantBrandingEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('displayName: $displayName, ')
+          ..write('logoBase64: $logoBase64, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppLocalDatabase extends GeneratedDatabase {
   _$AppLocalDatabase(QueryExecutor e) : super(e);
   $AppLocalDatabaseManager get managers => $AppLocalDatabaseManager(this);
@@ -25355,6 +26675,12 @@ abstract class _$AppLocalDatabase extends GeneratedDatabase {
       $SyncQueueEntriesTable(this);
   late final $SyncCheckpointEntriesTable syncCheckpointEntries =
       $SyncCheckpointEntriesTable(this);
+  late final $AuditLogEntriesTable auditLogEntries =
+      $AuditLogEntriesTable(this);
+  late final $PlanUpgradeRequestEntriesTable planUpgradeRequestEntries =
+      $PlanUpgradeRequestEntriesTable(this);
+  late final $TenantBrandingEntriesTable tenantBrandingEntries =
+      $TenantBrandingEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -25402,7 +26728,10 @@ abstract class _$AppLocalDatabase extends GeneratedDatabase {
         homeworkSubmissionEntries,
         onlineLearningAttemptEntries,
         syncQueueEntries,
-        syncCheckpointEntries
+        syncCheckpointEntries,
+        auditLogEntries,
+        planUpgradeRequestEntries,
+        tenantBrandingEntries
       ];
 }
 
@@ -25516,6 +26845,44 @@ final class $$TenantRecordsTableReferences extends BaseReferences<
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$PlanUpgradeRequestEntriesTable,
+      List<PlanUpgradeRequestEntry>> _planUpgradeRequestEntriesRefsTable(
+          _$AppLocalDatabase db) =>
+      MultiTypedResultKey.fromTable(db.planUpgradeRequestEntries,
+          aliasName: $_aliasNameGenerator(
+              db.tenantRecords.id, db.planUpgradeRequestEntries.tenantId));
+
+  $$PlanUpgradeRequestEntriesTableProcessedTableManager
+      get planUpgradeRequestEntriesRefs {
+    final manager = $$PlanUpgradeRequestEntriesTableTableManager(
+            $_db, $_db.planUpgradeRequestEntries)
+        .filter((f) => f.tenantId.id($_item.id));
+
+    final cache = $_typedResult
+        .readTableOrNull(_planUpgradeRequestEntriesRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
+  static MultiTypedResultKey<$TenantBrandingEntriesTable,
+      List<TenantBrandingEntry>> _tenantBrandingEntriesRefsTable(
+          _$AppLocalDatabase db) =>
+      MultiTypedResultKey.fromTable(db.tenantBrandingEntries,
+          aliasName: $_aliasNameGenerator(
+              db.tenantRecords.id, db.tenantBrandingEntries.tenantId));
+
+  $$TenantBrandingEntriesTableProcessedTableManager
+      get tenantBrandingEntriesRefs {
+    final manager = $$TenantBrandingEntriesTableTableManager(
+            $_db, $_db.tenantBrandingEntries)
+        .filter((f) => f.tenantId.id($_item.id));
+
+    final cache =
+        $_typedResult.readTableOrNull(_tenantBrandingEntriesRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$TenantRecordsTableFilterComposer
@@ -25624,6 +26991,43 @@ class $$TenantRecordsTableFilterComposer
                     parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter planUpgradeRequestEntriesRefs(
+      ComposableFilter Function(
+              $$PlanUpgradeRequestEntriesTableFilterComposer f)
+          f) {
+    final $$PlanUpgradeRequestEntriesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.planUpgradeRequestEntries,
+            getReferencedColumn: (t) => t.tenantId,
+            builder: (joinBuilder, parentComposers) =>
+                $$PlanUpgradeRequestEntriesTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.planUpgradeRequestEntries,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter tenantBrandingEntriesRefs(
+      ComposableFilter Function($$TenantBrandingEntriesTableFilterComposer f)
+          f) {
+    final $$TenantBrandingEntriesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.tenantBrandingEntries,
+            getReferencedColumn: (t) => t.tenantId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TenantBrandingEntriesTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.tenantBrandingEntries,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TenantRecordsTableOrderingComposer
@@ -25665,7 +27069,9 @@ class $$TenantRecordsTableTableManager extends RootTableManager<
         bool tenantLicenseEntriesRefs,
         bool schoolOwnerEntriesRefs,
         bool tenantUsageMetricEntriesRefs,
-        bool tenantFeatureFlagEntriesRefs})> {
+        bool tenantFeatureFlagEntriesRefs,
+        bool planUpgradeRequestEntriesRefs,
+        bool tenantBrandingEntriesRefs})> {
   $$TenantRecordsTableTableManager(
       _$AppLocalDatabase db, $TenantRecordsTable table)
       : super(TableManagerState(
@@ -25714,7 +27120,9 @@ class $$TenantRecordsTableTableManager extends RootTableManager<
               tenantLicenseEntriesRefs = false,
               schoolOwnerEntriesRefs = false,
               tenantUsageMetricEntriesRefs = false,
-              tenantFeatureFlagEntriesRefs = false}) {
+              tenantFeatureFlagEntriesRefs = false,
+              planUpgradeRequestEntriesRefs = false,
+              tenantBrandingEntriesRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
@@ -25722,7 +27130,9 @@ class $$TenantRecordsTableTableManager extends RootTableManager<
                 if (tenantLicenseEntriesRefs) db.tenantLicenseEntries,
                 if (schoolOwnerEntriesRefs) db.schoolOwnerEntries,
                 if (tenantUsageMetricEntriesRefs) db.tenantUsageMetricEntries,
-                if (tenantFeatureFlagEntriesRefs) db.tenantFeatureFlagEntries
+                if (tenantFeatureFlagEntriesRefs) db.tenantFeatureFlagEntries,
+                if (planUpgradeRequestEntriesRefs) db.planUpgradeRequestEntries,
+                if (tenantBrandingEntriesRefs) db.tenantBrandingEntries
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -25786,6 +27196,30 @@ class $$TenantRecordsTableTableManager extends RootTableManager<
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.tenantId == item.id),
+                        typedResults: items),
+                  if (planUpgradeRequestEntriesRefs)
+                    await $_getPrefetchedData(
+                        currentTable: table,
+                        referencedTable: $$TenantRecordsTableReferences
+                            ._planUpgradeRequestEntriesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$TenantRecordsTableReferences(db, table, p0)
+                                .planUpgradeRequestEntriesRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.tenantId == item.id),
+                        typedResults: items),
+                  if (tenantBrandingEntriesRefs)
+                    await $_getPrefetchedData(
+                        currentTable: table,
+                        referencedTable: $$TenantRecordsTableReferences
+                            ._tenantBrandingEntriesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$TenantRecordsTableReferences(db, table, p0)
+                                .tenantBrandingEntriesRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.tenantId == item.id),
                         typedResults: items)
                 ];
               },
@@ -25809,7 +27243,9 @@ typedef $$TenantRecordsTableProcessedTableManager = ProcessedTableManager<
         bool tenantLicenseEntriesRefs,
         bool schoolOwnerEntriesRefs,
         bool tenantUsageMetricEntriesRefs,
-        bool tenantFeatureFlagEntriesRefs})>;
+        bool tenantFeatureFlagEntriesRefs,
+        bool planUpgradeRequestEntriesRefs,
+        bool tenantBrandingEntriesRefs})>;
 typedef $$UserProfilesTableCreateCompanionBuilder = UserProfilesCompanion
     Function({
   required String id,
@@ -37221,6 +38657,745 @@ typedef $$SyncCheckpointEntriesTableProcessedTableManager
         ),
         SyncCheckpointEntry,
         PrefetchHooks Function()>;
+typedef $$AuditLogEntriesTableCreateCompanionBuilder = AuditLogEntriesCompanion
+    Function({
+  required String id,
+  required String tenantId,
+  required String actorId,
+  required String actorRole,
+  required String entityType,
+  required String entityId,
+  required String operation,
+  required String changedFields,
+  Value<DateTime> timestamp,
+  Value<int> rowid,
+});
+typedef $$AuditLogEntriesTableUpdateCompanionBuilder = AuditLogEntriesCompanion
+    Function({
+  Value<String> id,
+  Value<String> tenantId,
+  Value<String> actorId,
+  Value<String> actorRole,
+  Value<String> entityType,
+  Value<String> entityId,
+  Value<String> operation,
+  Value<String> changedFields,
+  Value<DateTime> timestamp,
+  Value<int> rowid,
+});
+
+class $$AuditLogEntriesTableFilterComposer
+    extends FilterComposer<_$AppLocalDatabase, $AuditLogEntriesTable> {
+  $$AuditLogEntriesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get tenantId => $state.composableBuilder(
+      column: $state.table.tenantId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get actorId => $state.composableBuilder(
+      column: $state.table.actorId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get actorRole => $state.composableBuilder(
+      column: $state.table.actorRole,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get entityType => $state.composableBuilder(
+      column: $state.table.entityType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get entityId => $state.composableBuilder(
+      column: $state.table.entityId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get operation => $state.composableBuilder(
+      column: $state.table.operation,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get changedFields => $state.composableBuilder(
+      column: $state.table.changedFields,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get timestamp => $state.composableBuilder(
+      column: $state.table.timestamp,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$AuditLogEntriesTableOrderingComposer
+    extends OrderingComposer<_$AppLocalDatabase, $AuditLogEntriesTable> {
+  $$AuditLogEntriesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get tenantId => $state.composableBuilder(
+      column: $state.table.tenantId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get actorId => $state.composableBuilder(
+      column: $state.table.actorId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get actorRole => $state.composableBuilder(
+      column: $state.table.actorRole,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get entityType => $state.composableBuilder(
+      column: $state.table.entityType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get entityId => $state.composableBuilder(
+      column: $state.table.entityId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get operation => $state.composableBuilder(
+      column: $state.table.operation,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get changedFields => $state.composableBuilder(
+      column: $state.table.changedFields,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get timestamp => $state.composableBuilder(
+      column: $state.table.timestamp,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+class $$AuditLogEntriesTableTableManager extends RootTableManager<
+    _$AppLocalDatabase,
+    $AuditLogEntriesTable,
+    AuditLogEntry,
+    $$AuditLogEntriesTableFilterComposer,
+    $$AuditLogEntriesTableOrderingComposer,
+    $$AuditLogEntriesTableCreateCompanionBuilder,
+    $$AuditLogEntriesTableUpdateCompanionBuilder,
+    (
+      AuditLogEntry,
+      BaseReferences<_$AppLocalDatabase, $AuditLogEntriesTable, AuditLogEntry>
+    ),
+    AuditLogEntry,
+    PrefetchHooks Function()> {
+  $$AuditLogEntriesTableTableManager(
+      _$AppLocalDatabase db, $AuditLogEntriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$AuditLogEntriesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$AuditLogEntriesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> tenantId = const Value.absent(),
+            Value<String> actorId = const Value.absent(),
+            Value<String> actorRole = const Value.absent(),
+            Value<String> entityType = const Value.absent(),
+            Value<String> entityId = const Value.absent(),
+            Value<String> operation = const Value.absent(),
+            Value<String> changedFields = const Value.absent(),
+            Value<DateTime> timestamp = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AuditLogEntriesCompanion(
+            id: id,
+            tenantId: tenantId,
+            actorId: actorId,
+            actorRole: actorRole,
+            entityType: entityType,
+            entityId: entityId,
+            operation: operation,
+            changedFields: changedFields,
+            timestamp: timestamp,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String tenantId,
+            required String actorId,
+            required String actorRole,
+            required String entityType,
+            required String entityId,
+            required String operation,
+            required String changedFields,
+            Value<DateTime> timestamp = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              AuditLogEntriesCompanion.insert(
+            id: id,
+            tenantId: tenantId,
+            actorId: actorId,
+            actorRole: actorRole,
+            entityType: entityType,
+            entityId: entityId,
+            operation: operation,
+            changedFields: changedFields,
+            timestamp: timestamp,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$AuditLogEntriesTableProcessedTableManager = ProcessedTableManager<
+    _$AppLocalDatabase,
+    $AuditLogEntriesTable,
+    AuditLogEntry,
+    $$AuditLogEntriesTableFilterComposer,
+    $$AuditLogEntriesTableOrderingComposer,
+    $$AuditLogEntriesTableCreateCompanionBuilder,
+    $$AuditLogEntriesTableUpdateCompanionBuilder,
+    (
+      AuditLogEntry,
+      BaseReferences<_$AppLocalDatabase, $AuditLogEntriesTable, AuditLogEntry>
+    ),
+    AuditLogEntry,
+    PrefetchHooks Function()>;
+typedef $$PlanUpgradeRequestEntriesTableCreateCompanionBuilder
+    = PlanUpgradeRequestEntriesCompanion Function({
+  required String id,
+  required String tenantId,
+  required String currentPlan,
+  required String requestedPlan,
+  Value<String?> message,
+  Value<String> status,
+  Value<String?> reviewedBy,
+  Value<DateTime> createdAt,
+  Value<DateTime?> reviewedAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$PlanUpgradeRequestEntriesTableUpdateCompanionBuilder
+    = PlanUpgradeRequestEntriesCompanion Function({
+  Value<String> id,
+  Value<String> tenantId,
+  Value<String> currentPlan,
+  Value<String> requestedPlan,
+  Value<String?> message,
+  Value<String> status,
+  Value<String?> reviewedBy,
+  Value<DateTime> createdAt,
+  Value<DateTime?> reviewedAt,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+final class $$PlanUpgradeRequestEntriesTableReferences extends BaseReferences<
+    _$AppLocalDatabase,
+    $PlanUpgradeRequestEntriesTable,
+    PlanUpgradeRequestEntry> {
+  $$PlanUpgradeRequestEntriesTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $TenantRecordsTable _tenantIdTable(_$AppLocalDatabase db) =>
+      db.tenantRecords.createAlias($_aliasNameGenerator(
+          db.planUpgradeRequestEntries.tenantId, db.tenantRecords.id));
+
+  $$TenantRecordsTableProcessedTableManager? get tenantId {
+    if ($_item.tenantId == null) return null;
+    final manager = $$TenantRecordsTableTableManager($_db, $_db.tenantRecords)
+        .filter((f) => f.id($_item.tenantId!));
+    final item = $_typedResult.readTableOrNull(_tenantIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$PlanUpgradeRequestEntriesTableFilterComposer extends FilterComposer<
+    _$AppLocalDatabase, $PlanUpgradeRequestEntriesTable> {
+  $$PlanUpgradeRequestEntriesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get currentPlan => $state.composableBuilder(
+      column: $state.table.currentPlan,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get requestedPlan => $state.composableBuilder(
+      column: $state.table.requestedPlan,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get message => $state.composableBuilder(
+      column: $state.table.message,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get reviewedBy => $state.composableBuilder(
+      column: $state.table.reviewedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get reviewedAt => $state.composableBuilder(
+      column: $state.table.reviewedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TenantRecordsTableFilterComposer get tenantId {
+    final $$TenantRecordsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.tenantId,
+        referencedTable: $state.db.tenantRecords,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TenantRecordsTableFilterComposer(ComposerState($state.db,
+                $state.db.tenantRecords, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$PlanUpgradeRequestEntriesTableOrderingComposer extends OrderingComposer<
+    _$AppLocalDatabase, $PlanUpgradeRequestEntriesTable> {
+  $$PlanUpgradeRequestEntriesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get currentPlan => $state.composableBuilder(
+      column: $state.table.currentPlan,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get requestedPlan => $state.composableBuilder(
+      column: $state.table.requestedPlan,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get message => $state.composableBuilder(
+      column: $state.table.message,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get reviewedBy => $state.composableBuilder(
+      column: $state.table.reviewedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get reviewedAt => $state.composableBuilder(
+      column: $state.table.reviewedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TenantRecordsTableOrderingComposer get tenantId {
+    final $$TenantRecordsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.tenantId,
+            referencedTable: $state.db.tenantRecords,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TenantRecordsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.tenantRecords, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$PlanUpgradeRequestEntriesTableTableManager extends RootTableManager<
+    _$AppLocalDatabase,
+    $PlanUpgradeRequestEntriesTable,
+    PlanUpgradeRequestEntry,
+    $$PlanUpgradeRequestEntriesTableFilterComposer,
+    $$PlanUpgradeRequestEntriesTableOrderingComposer,
+    $$PlanUpgradeRequestEntriesTableCreateCompanionBuilder,
+    $$PlanUpgradeRequestEntriesTableUpdateCompanionBuilder,
+    (PlanUpgradeRequestEntry, $$PlanUpgradeRequestEntriesTableReferences),
+    PlanUpgradeRequestEntry,
+    PrefetchHooks Function({bool tenantId})> {
+  $$PlanUpgradeRequestEntriesTableTableManager(
+      _$AppLocalDatabase db, $PlanUpgradeRequestEntriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$PlanUpgradeRequestEntriesTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$PlanUpgradeRequestEntriesTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> tenantId = const Value.absent(),
+            Value<String> currentPlan = const Value.absent(),
+            Value<String> requestedPlan = const Value.absent(),
+            Value<String?> message = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> reviewedBy = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> reviewedAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PlanUpgradeRequestEntriesCompanion(
+            id: id,
+            tenantId: tenantId,
+            currentPlan: currentPlan,
+            requestedPlan: requestedPlan,
+            message: message,
+            status: status,
+            reviewedBy: reviewedBy,
+            createdAt: createdAt,
+            reviewedAt: reviewedAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String tenantId,
+            required String currentPlan,
+            required String requestedPlan,
+            Value<String?> message = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> reviewedBy = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> reviewedAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              PlanUpgradeRequestEntriesCompanion.insert(
+            id: id,
+            tenantId: tenantId,
+            currentPlan: currentPlan,
+            requestedPlan: requestedPlan,
+            message: message,
+            status: status,
+            reviewedBy: reviewedBy,
+            createdAt: createdAt,
+            reviewedAt: reviewedAt,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$PlanUpgradeRequestEntriesTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({tenantId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (tenantId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.tenantId,
+                    referencedTable: $$PlanUpgradeRequestEntriesTableReferences
+                        ._tenantIdTable(db),
+                    referencedColumn: $$PlanUpgradeRequestEntriesTableReferences
+                        ._tenantIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$PlanUpgradeRequestEntriesTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppLocalDatabase,
+        $PlanUpgradeRequestEntriesTable,
+        PlanUpgradeRequestEntry,
+        $$PlanUpgradeRequestEntriesTableFilterComposer,
+        $$PlanUpgradeRequestEntriesTableOrderingComposer,
+        $$PlanUpgradeRequestEntriesTableCreateCompanionBuilder,
+        $$PlanUpgradeRequestEntriesTableUpdateCompanionBuilder,
+        (PlanUpgradeRequestEntry, $$PlanUpgradeRequestEntriesTableReferences),
+        PlanUpgradeRequestEntry,
+        PrefetchHooks Function({bool tenantId})>;
+typedef $$TenantBrandingEntriesTableCreateCompanionBuilder
+    = TenantBrandingEntriesCompanion Function({
+  required String id,
+  required String tenantId,
+  required String displayName,
+  Value<String?> logoBase64,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+typedef $$TenantBrandingEntriesTableUpdateCompanionBuilder
+    = TenantBrandingEntriesCompanion Function({
+  Value<String> id,
+  Value<String> tenantId,
+  Value<String> displayName,
+  Value<String?> logoBase64,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+final class $$TenantBrandingEntriesTableReferences extends BaseReferences<
+    _$AppLocalDatabase, $TenantBrandingEntriesTable, TenantBrandingEntry> {
+  $$TenantBrandingEntriesTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $TenantRecordsTable _tenantIdTable(_$AppLocalDatabase db) =>
+      db.tenantRecords.createAlias($_aliasNameGenerator(
+          db.tenantBrandingEntries.tenantId, db.tenantRecords.id));
+
+  $$TenantRecordsTableProcessedTableManager? get tenantId {
+    if ($_item.tenantId == null) return null;
+    final manager = $$TenantRecordsTableTableManager($_db, $_db.tenantRecords)
+        .filter((f) => f.id($_item.tenantId!));
+    final item = $_typedResult.readTableOrNull(_tenantIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$TenantBrandingEntriesTableFilterComposer
+    extends FilterComposer<_$AppLocalDatabase, $TenantBrandingEntriesTable> {
+  $$TenantBrandingEntriesTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+      column: $state.table.displayName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get logoBase64 => $state.composableBuilder(
+      column: $state.table.logoBase64,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TenantRecordsTableFilterComposer get tenantId {
+    final $$TenantRecordsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.tenantId,
+        referencedTable: $state.db.tenantRecords,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TenantRecordsTableFilterComposer(ComposerState($state.db,
+                $state.db.tenantRecords, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$TenantBrandingEntriesTableOrderingComposer
+    extends OrderingComposer<_$AppLocalDatabase, $TenantBrandingEntriesTable> {
+  $$TenantBrandingEntriesTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+      column: $state.table.displayName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get logoBase64 => $state.composableBuilder(
+      column: $state.table.logoBase64,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TenantRecordsTableOrderingComposer get tenantId {
+    final $$TenantRecordsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.tenantId,
+            referencedTable: $state.db.tenantRecords,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TenantRecordsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.tenantRecords, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$TenantBrandingEntriesTableTableManager extends RootTableManager<
+    _$AppLocalDatabase,
+    $TenantBrandingEntriesTable,
+    TenantBrandingEntry,
+    $$TenantBrandingEntriesTableFilterComposer,
+    $$TenantBrandingEntriesTableOrderingComposer,
+    $$TenantBrandingEntriesTableCreateCompanionBuilder,
+    $$TenantBrandingEntriesTableUpdateCompanionBuilder,
+    (TenantBrandingEntry, $$TenantBrandingEntriesTableReferences),
+    TenantBrandingEntry,
+    PrefetchHooks Function({bool tenantId})> {
+  $$TenantBrandingEntriesTableTableManager(
+      _$AppLocalDatabase db, $TenantBrandingEntriesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TenantBrandingEntriesTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TenantBrandingEntriesTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> tenantId = const Value.absent(),
+            Value<String> displayName = const Value.absent(),
+            Value<String?> logoBase64 = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TenantBrandingEntriesCompanion(
+            id: id,
+            tenantId: tenantId,
+            displayName: displayName,
+            logoBase64: logoBase64,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String tenantId,
+            required String displayName,
+            Value<String?> logoBase64 = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              TenantBrandingEntriesCompanion.insert(
+            id: id,
+            tenantId: tenantId,
+            displayName: displayName,
+            logoBase64: logoBase64,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$TenantBrandingEntriesTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({tenantId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (tenantId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.tenantId,
+                    referencedTable: $$TenantBrandingEntriesTableReferences
+                        ._tenantIdTable(db),
+                    referencedColumn: $$TenantBrandingEntriesTableReferences
+                        ._tenantIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$TenantBrandingEntriesTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppLocalDatabase,
+        $TenantBrandingEntriesTable,
+        TenantBrandingEntry,
+        $$TenantBrandingEntriesTableFilterComposer,
+        $$TenantBrandingEntriesTableOrderingComposer,
+        $$TenantBrandingEntriesTableCreateCompanionBuilder,
+        $$TenantBrandingEntriesTableUpdateCompanionBuilder,
+        (TenantBrandingEntry, $$TenantBrandingEntriesTableReferences),
+        TenantBrandingEntry,
+        PrefetchHooks Function({bool tenantId})>;
 
 class $AppLocalDatabaseManager {
   final _$AppLocalDatabase _db;
@@ -37327,4 +39502,11 @@ class $AppLocalDatabaseManager {
       $$SyncQueueEntriesTableTableManager(_db, _db.syncQueueEntries);
   $$SyncCheckpointEntriesTableTableManager get syncCheckpointEntries =>
       $$SyncCheckpointEntriesTableTableManager(_db, _db.syncCheckpointEntries);
+  $$AuditLogEntriesTableTableManager get auditLogEntries =>
+      $$AuditLogEntriesTableTableManager(_db, _db.auditLogEntries);
+  $$PlanUpgradeRequestEntriesTableTableManager get planUpgradeRequestEntries =>
+      $$PlanUpgradeRequestEntriesTableTableManager(
+          _db, _db.planUpgradeRequestEntries);
+  $$TenantBrandingEntriesTableTableManager get tenantBrandingEntries =>
+      $$TenantBrandingEntriesTableTableManager(_db, _db.tenantBrandingEntries);
 }

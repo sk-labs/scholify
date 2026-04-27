@@ -785,6 +785,54 @@ class SyncCheckpointEntries extends Table {
   Set<Column<Object>> get primaryKey => {entityType};
 }
 
+// ── Audit Log (schema v34) ───────────────────────────────────────────────
+
+class AuditLogEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text()();
+  TextColumn get actorId => text()();
+  TextColumn get actorRole => text()();
+  TextColumn get entityType => text()();
+  TextColumn get entityId => text()();
+  TextColumn get operation => text()(); // 'create', 'update', 'delete'
+  TextColumn get changedFields => text()(); // JSON snapshot
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+// ── Plan Upgrade Requests (schema v35) ───────────────────────────────────
+
+class PlanUpgradeRequestEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text().references(TenantRecords, #id)();
+  TextColumn get currentPlan => text()();
+  TextColumn get requestedPlan => text()();
+  TextColumn get message => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))(); // 'pending', 'approved', 'rejected'
+  TextColumn get reviewedBy => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get reviewedAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+// ── Tenant Branding (schema v36) ─────────────────────────────────────────
+
+class TenantBrandingEntries extends Table {
+  TextColumn get id => text()();
+  TextColumn get tenantId => text().references(TenantRecords, #id)();
+  TextColumn get displayName => text()();
+  TextColumn get logoBase64 => text().nullable()();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 class TenantLicenseView {
   const TenantLicenseView({
     required this.licenseId,
@@ -1002,6 +1050,9 @@ class ExamAnalyticsMarkRow {
     OnlineLearningAttemptEntries,
     SyncQueueEntries,
     SyncCheckpointEntries,
+    AuditLogEntries,
+    PlanUpgradeRequestEntries,
+    TenantBrandingEntries,
   ],
 )
 class AppLocalDatabase extends _$AppLocalDatabase {
@@ -1009,7 +1060,7 @@ class AppLocalDatabase extends _$AppLocalDatabase {
     : super(executor ?? createDatabaseExecutor());
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 36;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1117,6 +1168,36 @@ class AppLocalDatabase extends _$AppLocalDatabase {
       }
       if (from < 33) {
         await migrator.createTable(onlineLessonEntries);
+      }
+      if (from < 34) {
+        await migrator.createTable(auditLogEntries);
+        // Add indexes for audit log queries
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_audit_log_tenant_timestamp ON audit_log_entries(tenant_id, timestamp DESC)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_audit_log_entity_timestamp ON audit_log_entries(entity_type, timestamp DESC)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_audit_log_actor_timestamp ON audit_log_entries(actor_id, timestamp DESC)',
+        );
+      }
+      if (from < 35) {
+        await migrator.createTable(planUpgradeRequestEntries);
+        // Add indexes for plan upgrade request queries
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_plan_upgrade_tenant_status ON plan_upgrade_request_entries(tenant_id, status)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_plan_upgrade_status_created ON plan_upgrade_request_entries(status, created_at DESC)',
+        );
+      }
+      if (from < 36) {
+        await migrator.createTable(tenantBrandingEntries);
+        // Add index for tenant branding queries
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tenant_branding_tenant_id ON tenant_branding_entries(tenant_id)',
+        );
       }
     },
   );
