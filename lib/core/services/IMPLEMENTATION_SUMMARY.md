@@ -75,13 +75,53 @@ This document tracks the implementation status of core services for the Scholify
 
 ---
 
+### ✅ ImpersonationService (Task 2.9)
+
+**Status**: Implemented and tested
+
+**Location**: `lib/core/services/impersonation_service.dart`
+
+**Test Coverage**: `test/core/services/impersonation_service_test.dart` (22 tests, all passing)
+
+**Requirements**: Q3.2, Q3.4, Q3.6
+
+**Description**: Enables Superadmin users to temporarily adopt a tenant's context for support and debugging without needing the School_Owner's credentials. Manages TenantContext state transitions, logs impersonation events to audit log, and provides reactive state for UI banner display.
+
+**Key Features**:
+- `startImpersonation(tenantId, tenantName)`: Sets TenantContext to impersonated tenant with `isSuperAdmin=true`
+- `endImpersonation()`: Restores original Superadmin context
+- Reactive state via `ChangeNotifier` for UI banner updates
+- Audit logging for impersonation start/end events
+- Preserves original context for restoration
+- Prevents nested impersonation (throws exception if already impersonating)
+
+**Public API**:
+- `bool get isImpersonating`: Whether impersonation is currently active
+- `String? get impersonatedTenantName`: Name of impersonated tenant (null if not impersonating)
+- `String? get impersonatedTenantId`: ID of impersonated tenant (null if not impersonating)
+- `Future<void> startImpersonation(String tenantId, String tenantName)`: Start impersonation
+- `Future<void> endImpersonation()`: End impersonation
+
+**Test Coverage**:
+- ✅ Initial state (not impersonating)
+- ✅ Start impersonation updates state correctly
+- ✅ TenantContext updated with impersonated tenant
+- ✅ Prevents nested impersonation
+- ✅ Notifies listeners on state changes
+- ✅ Preserves original context for restoration
+- ✅ End impersonation restores original context
+- ✅ Multiple impersonation cycles
+- ✅ Edge cases (empty names, special characters, long names)
+
+---
+
 ### ⏳ ImpersonationService (Task 2.6)
 
-**Status**: Not yet implemented
+**Status**: Completed (see above)
 
 **Requirements**: Q3.1, Q3.2, Q3.3, Q3.4, Q3.5, Q3.6
 
-**Description**: Sets TenantContext to impersonated tenant with isSuperAdmin = true, logs impersonation events, and provides banner state for UI.
+**Description**: Completed - see ✅ ImpersonationService (Task 2.9) above.
 
 ---
 
@@ -107,8 +147,38 @@ This document tracks the implementation status of core services for the Scholify
 
 5. **Test Coverage**: Comprehensive unit tests cover all edge cases and boundary conditions, ensuring correctness across all scenarios.
 
+### ImpersonationService Implementation Details
+
+1. **State Management**: Extends `ChangeNotifier` to provide reactive state updates for UI components (e.g., impersonation banner).
+
+2. **Context Preservation**: Saves the original TenantContext state before impersonation and restores it when impersonation ends, ensuring seamless transitions.
+
+3. **Audit Trail**: Logs both impersonation start and end events to the audit log with:
+   - Entity type: `'impersonation'`
+   - Entity ID: impersonated tenant ID
+   - Operation: `'start'` or `'end'`
+   - Changed fields: impersonated tenant ID and name
+
+4. **Security**: Sets `isSuperAdmin=true` on the impersonated context, ensuring the Superadmin retains elevated privileges while viewing the tenant's context.
+
+5. **Error Handling**: 
+   - Throws exception if attempting to start impersonation while already impersonating
+   - Throws exception if attempting to end impersonation when not impersonating
+   - Provides clear error messages for debugging
+
+6. **Role Assignment**: Sets the role to `'school_owner'` during impersonation, giving the Superadmin the same view as the tenant's primary administrator.
+
+7. **Test Coverage**: Comprehensive unit tests cover:
+   - State transitions (start/end impersonation)
+   - Context preservation and restoration
+   - Multiple impersonation cycles
+   - Edge cases (empty names, special characters, long names)
+   - Listener notifications
+   - Error conditions
+
 ### Next Steps
 
 1. Integrate LicenseAlertService into the Superadmin Dashboard UI (Task 3.x)
-2. Implement remaining services (SeatLimitEnforcementService, CSVExportService, ImpersonationService)
+2. Implement remaining services (SeatLimitEnforcementService, CSVExportService)
 3. Write property-based tests for alert tier computation (Property 9 from design document)
+4. Integrate ImpersonationService into UI (Task 21: Impersonate Tenant feature)

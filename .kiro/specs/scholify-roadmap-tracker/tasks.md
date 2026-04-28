@@ -35,7 +35,7 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Verify generated DAO classes compile without errors
     - _Requirements: H3.1, B2.4, B3.2_
 
-- [~] 2. Implement core services
+- [x] 2. Implement core services
   - [x] 2.1 Implement AuditLogService
     - Create service class with logWrite method
     - Integrate with TenantContext to capture actor information
@@ -69,34 +69,34 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - **Property 12: Enrollment count consistency**
     - **Validates: Requirements A3.2, A3.6**
   
-  - [~] 2.7 Implement CSVExportService
+  - [x] 2.7 Implement CSVExportService
     - Create service class with exportTenantList method
     - Serialize tenant list to RFC 4180 compliant CSV
     - Escape commas, quotes, and newlines per spec
     - Trigger platform-specific file save dialog
     - _Requirements: Q2.2, Q2.3, Q2.6_
   
-  - [~] 2.8 Write property test for CSVExportService
+  - [x] 2.8 Write property test for CSVExportService
     - **Property 18: CSV serialization round-trip**
     - **Validates: Requirements B4.7, Q2.6**
   
-  - [~] 2.9 Implement ImpersonationService
+  - [x] 2.9 Implement ImpersonationService
     - Create service class with startImpersonation and endImpersonation methods
     - Set TenantContext to impersonated tenant with isSuperAdmin=true
     - Log impersonation start/end to audit log
     - Provide banner state for UI
     - _Requirements: Q3.2, Q3.4, Q3.6_
   
-  - [~] 2.10 Write property test for ImpersonationService
+  - [x] 2.10 Write property test for ImpersonationService
     - **Property 19: Impersonation banner invariant**
     - **Validates: Requirements Q3.3**
 
-- [~] 3. Write validation property tests
-  - [~] 3.1 Write property test for wizard school name validation
+- [-] 3. Write validation property tests
+  - [x] 3.1 Write property test for wizard school name validation
     - **Property 1: Wizard school name validation**
     - **Validates: Requirements H1.2**
   
-  - [~] 3.2 Write property test for wizard plan and seat limit validation
+  - [x] 3.2 Write property test for wizard plan and seat limit validation
     - **Property 2: Wizard plan and seat limit validation**
     - **Validates: Requirements H1.3**
   
