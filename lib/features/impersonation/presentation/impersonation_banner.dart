@@ -17,13 +17,11 @@ class ImpersonationBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<ImpersonationState>(
-      stream: impersonationService.watchImpersonationState(),
-      builder: (context, snapshot) {
-        final state = snapshot.data;
-
+    return ListenableBuilder(
+      listenable: impersonationService,
+      builder: (context, child) {
         // Q3.3: Only show banner when impersonation is active
-        if (state == null || !state.isImpersonating) {
+        if (!impersonationService.isImpersonating) {
           return const SizedBox.shrink();
         }
 
@@ -47,7 +45,7 @@ class ImpersonationBanner extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Impersonating: ${state.tenantName} — tap to exit',
+                      'Impersonating: ${impersonationService.impersonatedTenantName} — tap to exit',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
