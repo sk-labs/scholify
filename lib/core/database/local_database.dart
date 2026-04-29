@@ -1060,7 +1060,7 @@ class AppLocalDatabase extends _$AppLocalDatabase {
     : super(executor ?? createDatabaseExecutor());
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 37;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1197,6 +1197,36 @@ class AppLocalDatabase extends _$AppLocalDatabase {
         // Add index for tenant branding queries
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_tenant_branding_tenant_id ON tenant_branding_entries(tenant_id)',
+        );
+      }
+      if (from < 37) {
+        // 25.1: Add indexes for frequently queried columns (performance)
+        // TenantRecords: tenant_id lookup and recency ordering
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tenant_records_id ON tenant_records(id)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tenant_records_updated_at ON tenant_records(updated_at DESC)',
+        );
+        // TenantLicenseEntries: tenant lookup, expiry scanning, active filtering
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tenant_license_tenant_id ON tenant_license_entries(tenant_id)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tenant_license_expires_at ON tenant_license_entries(expires_at)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_tenant_license_is_active ON tenant_license_entries(is_active)',
+        );
+        // AuditLogEntries: already created in v34, ensure they exist on fresh installs
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_audit_log_tenant_timestamp ON audit_log_entries(tenant_id, timestamp DESC)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_audit_log_entity_timestamp ON audit_log_entries(entity_type, timestamp DESC)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_audit_log_actor_timestamp ON audit_log_entries(actor_id, timestamp DESC)',
         );
       }
     },

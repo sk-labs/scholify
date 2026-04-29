@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../core/access/module_access_policy.dart';
 import '../core/database/local_database.dart';
+import '../core/services/audit_log_service.dart';
+import '../core/services/impersonation_service.dart';
 import '../core/services/license_alert_service.dart';
 import '../core/services/seat_limit_enforcement_service.dart';
 import '../core/sync/sync_engine.dart';
@@ -50,6 +54,54 @@ class ScholifyShellPage extends StatefulWidget {
 
 class _ScholifyShellPageState extends State<ScholifyShellPage> {
   int _selectedIndex = 0;
+  late final ImpersonationService _impersonationService;
+
+  @override
+  void initState() {
+    super.initState();
+    _impersonationService = ImpersonationService(
+      tenantContext: widget.tenantContext,
+      auditLogService: AuditLogService(
+        database: widget.syncEngine.database,
+        tenantContext: widget.tenantContext,
+        gateway: widget.syncEngine.pocketbaseGateway,
+      ),
+    );
+    _impersonationService.addListener(_onImpersonationChanged);
+    // Load persisted branding into TenantContext so the app bar reflects it
+    // immediately on shell mount (B3.3, B3.4, B3.5, B3.6)
+    _loadBrandingIntoContext();
+  }
+
+  /// Loads the tenant's branding from the local DB and seeds TenantContext.
+  Future<void> _loadBrandingIntoContext() async {
+    final tenantId = widget.tenantContext.tenantId;
+    if (tenantId == null || tenantId.isEmpty) return;
+    try {
+      final branding = await (widget.syncEngine.database
+              .select(widget.syncEngine.database.tenantBrandingEntries)
+            ..where((tbl) => tbl.tenantId.equals(tenantId))
+            ..limit(1))
+          .getSingleOrNull();
+      if (!mounted) return;
+      widget.tenantContext.setBranding(
+        displayName: branding?.displayName,
+        logoBase64: branding?.logoBase64,
+      );
+    } catch (_) {
+      // Non-fatal: branding will just show defaults
+    }
+  }
+
+  @override
+  void dispose() {
+    _impersonationService.removeListener(_onImpersonationChanged);
+    super.dispose();
+  }
+
+  void _onImpersonationChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,9 +417,19 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final impersonationBanner = _impersonationService.isImpersonating
+            ? _buildImpersonationBanner()
+            : null;
+
         if (constraints.maxWidth < 900) {
           return Scaffold(
-            body: destinations[activeIndex].page,
+            appBar: _buildBrandingAppBar(compact: true),
+            body: Column(
+              children: [
+                if (impersonationBanner != null) impersonationBanner,
+                Expanded(child: destinations[activeIndex].page),
+              ],
+            ),
             bottomNavigationBar: NavigationBar(
               selectedIndex: activeIndex,
               onDestinationSelected: (index) {
@@ -387,31 +449,117 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         }
 
         return Scaffold(
-          body: Row(
+          appBar: _buildBrandingAppBar(compact: false),
+          body: Column(
             children: [
-              NavigationRail(
-                selectedIndex: activeIndex,
-                onDestinationSelected: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-                scrollable: true,
-                labelType: NavigationRailLabelType.all,
-                destinations: [
-                  for (final destination in destinations)
-                    NavigationRailDestination(
-                      icon: Icon(destination.icon),
-                      label: Text(destination.label),
+              if (impersonationBanner != null) impersonationBanner,
+              Expanded(
+                child: Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: activeIndex,
+                      onDestinationSelected: (index) {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      scrollable: true,
+                      labelType: NavigationRailLabelType.all,
+                      destinations: [
+                        for (final destination in destinations)
+                          NavigationRailDestination(
+                            icon: Icon(destination.icon),
+                            label: Text(destination.label),
+                          ),
+                      ],
                     ),
-                ],
+                    const VerticalDivider(width: 1),
+                    Expanded(child: destinations[activeIndex].page),
+                  ],
+                ),
               ),
-              const VerticalDivider(width: 1),
-              Expanded(child: destinations[activeIndex].page),
             ],
           ),
         );
       },
+    );
+  }
+
+  /// Builds the app bar with tenant branding (B3.3, B3.4, B3.5, B3.6).
+  /// Shows tenant logo (if configured) and display name (if configured),
+  /// falling back to the default Scholify icon and name.
+  PreferredSizeWidget _buildBrandingAppBar({required bool compact}) {
+    final logoBase64 = widget.tenantContext.brandingLogoBase64;
+    final displayName = widget.tenantContext.brandingDisplayName
+        ?? widget.tenantContext.tenantName
+        ?? 'Scholify';
+
+    Widget leadingLogo;
+    if (logoBase64 != null && logoBase64.isNotEmpty) {
+      try {
+        final bytes = base64Decode(logoBase64);
+        leadingLogo = Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Image.memory(bytes, fit: BoxFit.contain),
+        );
+      } catch (_) {
+        leadingLogo = const Icon(Icons.school);
+      }
+    } else {
+      leadingLogo = const Icon(Icons.school);
+    }
+
+    return AppBar(
+      leading: Padding(
+        padding: const EdgeInsets.all(8),
+        child: leadingLogo,
+      ),
+      title: Text(
+        displayName,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      centerTitle: false,
+    );
+  }
+
+  /// Builds the impersonation banner (Q3.3, Q3.4).
+  /// Tapping the banner ends impersonation and restores the original context.
+  Widget _buildImpersonationBanner() {
+    final tenantName = _impersonationService.impersonatedTenantName ?? 'Unknown';
+    return Material(
+      color: Colors.amber.shade700,
+      child: InkWell(
+        onTap: () async {
+          try {
+            await _impersonationService.endImpersonation();
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to end impersonation: $e')),
+              );
+            }
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.visibility, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Impersonating: $tenantName — tap to exit',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(Icons.close, color: Colors.white, size: 18),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

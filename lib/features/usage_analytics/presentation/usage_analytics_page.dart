@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/local_database.dart';
@@ -212,35 +213,11 @@ class _UsageAnalyticsPageState extends State<UsageAnalyticsPage> {
             label: const Text('Back to List'),
           ),
         ),
-        // Detail content
+        // MAU chart
         Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.show_chart, size: 64, color: Colors.blue),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'MAU Time-Series Chart',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tenant ID: $tenantId',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Chart visualization requires a charting library like fl_chart.\n'
-                    'Add fl_chart to pubspec.yaml to enable this feature.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
+          child: _MauTimeSeriesChart(
+            tenantId: tenantId,
+            syncEngine: widget.syncEngine,
           ),
         ),
       ],
@@ -286,5 +263,239 @@ class _UsageAnalyticsPageState extends State<UsageAnalyticsPage> {
         ),
       );
     }
+  }
+}
+
+/// MAU Time-Series Chart widget (B4.3)
+///
+/// Displays a 6-month line chart of Monthly Active Users for a single tenant,
+/// sourced from TenantUsageMetricEntries ordered by periodKey.
+class _MauTimeSeriesChart extends StatelessWidget {
+  const _MauTimeSeriesChart({
+    required this.tenantId,
+    required this.syncEngine,
+  });
+
+  final String tenantId;
+  final SyncEngine syncEngine;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<TenantUsageMetricEntry>>(
+      stream: _watchMetrics(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error loading metrics: ${snapshot.error}'),
+          );
+        }
+
+        final allMetrics = snapshot.data ?? [];
+
+        // Take the last 6 periods, sorted by periodKey ascending
+        final metrics = (allMetrics.toList()
+              ..sort((a, b) => a.periodKey.compareTo(b.periodKey)))
+            .reversed
+            .take(6)
+            .toList()
+            .reversed
+            .toList();
+
+        if (metrics.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.show_chart, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No usage data available',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'MAU data will appear here after sync',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Monthly Active Users — Last ${metrics.length} Months',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tenant: $tenantId',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              Expanded(child: _buildChart(context, metrics)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Stream<List<TenantUsageMetricEntry>> _watchMetrics() {
+    return (syncEngine.database.select(syncEngine.database.tenantUsageMetricEntries)
+          ..where((tbl) => tbl.tenantId.equals(tenantId)))
+        .watch();
+  }
+
+  Widget _buildChart(
+      BuildContext context, List<TenantUsageMetricEntry> metrics) {
+    final maxMau = metrics
+        .map((m) => m.monthlyActiveUsers.toDouble())
+        .fold(0.0, (a, b) => a > b ? a : b);
+    final yMax = maxMau < 10 ? 10.0 : maxMau * 1.2;
+
+    final spots = metrics.asMap().entries.map((entry) {
+      return FlSpot(
+        entry.key.toDouble(),
+        entry.value.monthlyActiveUsers.toDouble(),
+      );
+    }).toList();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: (metrics.length - 1).toDouble(),
+        minY: 0,
+        maxY: yMax,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: yMax / 5,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey.withOpacity(0.2),
+            strokeWidth: 1,
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.shade300),
+            left: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= metrics.length) {
+                  return const SizedBox.shrink();
+                }
+                // periodKey format: YYYY-MM
+                final periodKey = metrics[idx].periodKey;
+                String label;
+                try {
+                  final parts = periodKey.split('-');
+                  if (parts.length >= 2) {
+                    final month = int.parse(parts[1]);
+                    label = DateFormat('MMM').format(DateTime(0, month));
+                    if (parts.length >= 1) label += '\n${parts[0]}';
+                  } else {
+                    label = periodKey;
+                  }
+                } catch (_) {
+                  label = periodKey;
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    label,
+                    style: const TextStyle(fontSize: 10),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48,
+              getTitlesWidget: (value, meta) {
+                if (value == meta.max) return const SizedBox.shrink();
+                return Text(
+                  value.toInt().toString(),
+                  style: const TextStyle(fontSize: 11),
+                );
+              },
+            ),
+          ),
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: colorScheme.primary,
+            barWidth: 3,
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, bar, index) =>
+                  FlDotCirclePainter(
+                radius: 5,
+                color: colorScheme.primary,
+                strokeWidth: 2,
+                strokeColor: Colors.white,
+              ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              color: colorScheme.primary.withOpacity(0.12),
+            ),
+          ),
+        ],
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final idx = spot.x.toInt();
+                final periodKey = idx < metrics.length
+                    ? metrics[idx].periodKey
+                    : '';
+                return LineTooltipItem(
+                  '$periodKey\n${spot.y.toInt()} MAU',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
+      ),
+    );
   }
 }

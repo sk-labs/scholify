@@ -85,6 +85,13 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
         _displayNameController.text = branding?.displayName ?? tenant?.name ?? '';
         _isLoading = false;
       });
+
+      // Seed TenantContext with persisted branding so the shell reflects it
+      // even before the user opens this page (B3.3, B3.4, B3.5, B3.6)
+      widget.tenantContext.setBranding(
+        displayName: branding?.displayName,
+        logoBase64: branding?.logoBase64,
+      );
     } catch (error) {
       setState(() {
         _errorMessage = 'Failed to load branding: $error';
@@ -386,8 +393,11 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
         }),
       );
 
-      // Notify TenantContext to refresh (B3.2)
-      // The shell will reload branding on next build
+      // Notify TenantContext to refresh shell branding (B3.3, B3.4, B3.5, B3.6)
+      widget.tenantContext.setBranding(
+        displayName: displayName,
+        logoBase64: logoBase64,
+      );
 
       if (!mounted) return;
 
