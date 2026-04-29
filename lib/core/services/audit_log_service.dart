@@ -34,6 +34,7 @@ class AuditLogService {
   /// - [entityId]: The unique identifier of the entity
   /// - [operation]: The operation type ('create', 'update', 'delete')
   /// - [changedFields]: A map of field names to their new values
+  /// - [tenantId]: Optional tenant ID override (used when creating new tenants)
   /// 
   /// Requirements: H3.1, H3.2
   Future<void> logWrite({
@@ -41,9 +42,10 @@ class AuditLogService {
     required String entityId,
     required String operation,
     required Map<String, dynamic> changedFields,
+    String? tenantId,
   }) async {
     // Get actor information from TenantContext
-    final tenantId = _tenantContext.tenantId ?? '';
+    final effectiveTenantId = tenantId ?? _tenantContext.tenantId ?? '';
     final actorRole = _tenantContext.role;
     
     // Get actor ID from PocketBase auth store
@@ -51,7 +53,7 @@ class AuditLogService {
     final actorId = authModel?['id']?.toString() ?? '';
 
     // Validate required fields
-    if (tenantId.isEmpty) {
+    if (effectiveTenantId.isEmpty) {
       throw Exception('Cannot log audit entry: tenantId is required');
     }
     if (actorId.isEmpty) {
@@ -70,7 +72,7 @@ class AuditLogService {
     await _database.into(_database.auditLogEntries).insert(
       AuditLogEntriesCompanion.insert(
         id: auditId,
-        tenantId: tenantId,
+        tenantId: effectiveTenantId,
         actorId: actorId,
         actorRole: actorRole,
         entityType: entityType,
@@ -82,13 +84,13 @@ class AuditLogService {
 
     // Enqueue audit log entry for sync (push-only)
     await _database.queueOperation(
-      tenantId: tenantId,
+      tenantId: effectiveTenantId,
       entityType: 'audit_log',
       entityId: auditId,
       operation: 'create',
       payload: jsonEncode({
         'id': auditId,
-        'tenant_id': tenantId,
+        'tenant_id': effectiveTenantId,
         'actor_id': actorId,
         'actor_role': actorRole,
         'entity_type': entityType,

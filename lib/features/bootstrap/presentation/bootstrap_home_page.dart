@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/branding.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../sync/presentation/sync_failure_page.dart';
 
 class BootstrapHomePage extends StatelessWidget {
   const BootstrapHomePage({
@@ -34,7 +35,43 @@ class BootstrapHomePage extends StatelessWidget {
             : 'Background sync stopped';
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Scholify Foundation')),
+          appBar: AppBar(
+            title: const Text('Scholify Foundation'),
+            actions: [
+              // Warning icon for sync failures (A2.7)
+              StreamBuilder<List<dynamic>>(
+                stream: syncEngine.database.watchFailedSyncEntries(),
+                builder: (context, snapshot) {
+                  final failedCount = snapshot.data?.length ?? 0;
+                  
+                  // Only show icon when there are failures
+                  if (failedCount == 0) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: IconButton(
+                      icon: Badge(
+                        label: Text('$failedCount'),
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        child: const Icon(Icons.warning_amber_rounded),
+                      ),
+                      tooltip: 'Sync Failures ($failedCount)',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SyncFailurePage(),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: ListView(

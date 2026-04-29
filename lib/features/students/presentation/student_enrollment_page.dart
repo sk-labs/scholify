@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/local_database.dart';
+import '../../../core/services/seat_limit_enforcement_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../data/student_repository.dart';
@@ -11,10 +12,12 @@ class StudentEnrollmentPage extends StatefulWidget {
     super.key,
     required this.tenantContext,
     required this.syncEngine,
+    required this.seatLimitEnforcementService,
   });
 
   final TenantContext tenantContext;
   final SyncEngine syncEngine;
+  final SeatLimitEnforcementService seatLimitEnforcementService;
 
   @override
   State<StudentEnrollmentPage> createState() => _StudentEnrollmentPageState();
@@ -384,6 +387,13 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
     });
 
     try {
+      // Check seat limit before creating a new enrollment (A3.1, A3.2)
+      // Only check for new enrollments, not updates
+      if (_editingEnrollmentId == null && _selectedStatus == 'enrolled') {
+        final tenantId = widget.tenantContext.tenantId ?? 'school_demo';
+        await widget.seatLimitEnforcementService.checkSeatLimit(tenantId);
+      }
+
       await _repository.createOrUpdateEnrollment(
         enrollmentId: _editingEnrollmentId,
         studentId: studentId,
@@ -405,6 +415,20 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
           ),
         );
         setState(_resetForm);
+      }
+    } on SeatLimitExceededException catch (e) {
+      // Display seat limit error message (A3.3)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Seat limit reached. Contact your administrator to upgrade the plan. '
+              '(Currently enrolled: ${e.currentCount} / ${e.seatLimit} seats)',
+            ),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (error) {
       if (mounted) {

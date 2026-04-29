@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/local_database.dart';
+import '../../../core/services/csv_export_service.dart';
+import '../../../core/services/license_alert_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 
@@ -26,18 +29,83 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
   final _schoolNameController = TextEditingController();
   final _ownerEmailController = TextEditingController();
   final _seatLimitController = TextEditingController(text: '250');
+  final _searchController = TextEditingController();
 
   String _selectedPlan = 'professional';
   bool _isSaving = false;
+  String _searchQuery = '';
+  Timer? _debounceTimer;
+  String? _planFilter; // null = all, 'starter', 'professional', 'enterprise'
+  bool? _activeFilter; // null = all, true = active, false = suspended
+  
+  late final LicenseAlertService _licenseAlertService;
+  Map<String, AlertTier> _alertTiers = {};
 
   static const List<String> _plans = ['starter', 'professional', 'enterprise'];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+    _licenseAlertService = LicenseAlertService(
+      database: widget.syncEngine.database,
+    );
+    
+    // Watch alerts and build a map of tenantId -> AlertTier
+    _licenseAlertService.watchAlerts().listen((alerts) {
+      if (mounted) {
+        setState(() {
+          _alertTiers = {
+            for (final alert in alerts) alert.tenantId: alert.tier,
+          };
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
     _schoolNameController.dispose();
     _ownerEmailController.dispose();
     _seatLimitController.dispose();
+    _searchController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+    });
+  }
+
+  List<TenantLicenseView> _applyFilters(List<TenantLicenseView> tenants) {
+    var filtered = tenants;
+
+    // Apply search query filter
+    if (_searchQuery.isNotEmpty) {
+      final lowerQuery = _searchQuery.toLowerCase();
+      filtered = filtered
+          .where((t) => t.tenantName.toLowerCase().contains(lowerQuery))
+          .toList();
+    }
+
+    // Apply plan filter
+    if (_planFilter != null) {
+      filtered =
+          filtered.where((t) => t.planCode == _planFilter).toList();
+    }
+
+    // Apply active status filter
+    if (_activeFilter != null) {
+      filtered =
+          filtered.where((t) => t.isActive == _activeFilter).toList();
+    }
+
+    return filtered;
   }
 
   @override
@@ -45,12 +113,27 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tenant Licensing')),
+      appBar: AppBar(
+        title: const Text('Tenant Licensing'),
+        actions: [
+          // Q2.1: Export CSV button visible only to Superadmin
+          if (widget.tenantContext.isSuperAdmin)
+            IconButton(
+              icon: const Icon(Icons.download),
+              tooltip: 'Export to CSV',
+              onPressed: _handleExportCsv,
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             _buildCreateLicenseCard(),
+            const SizedBox(height: 16),
+            _buildSearchField(),
+            const SizedBox(height: 12),
+            _buildFilterChips(),
             const SizedBox(height: 16),
             Expanded(
               child: StreamBuilder<List<TenantLicenseView>>(
@@ -66,10 +149,18 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
                     );
                   }
 
-                  final licenses = snapshot.data ?? const [];
-                  if (licenses.isEmpty) {
+                  final allLicenses = snapshot.data ?? const [];
+                  final licenses = _applyFilters(allLicenses);
+
+                  if (allLicenses.isEmpty) {
                     return const Center(
                       child: Text('No tenant licenses created yet.'),
+                    );
+                  }
+
+                  if (licenses.isEmpty) {
+                    return const Center(
+                      child: Text('No tenants match the current filters.'),
                     );
                   }
 
@@ -78,6 +169,8 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final item = licenses[index];
+                      final alertTier = _alertTiers[item.tenantId];
+                      
                       return Card(
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -95,14 +188,38 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
                                       ),
                                     ),
                                   ),
-                                  Chip(
-                                    label: Text(
-                                      item.isActive ? 'Active' : 'Suspended',
+                                  // Display expired status (H4.5)
+                                  if (alertTier == AlertTier.expired)
+                                    Chip(
+                                      label: const Text('Expired'),
+                                      backgroundColor: Colors.red.shade700,
+                                      labelStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  else
+                                    Chip(
+                                      label: Text(
+                                        item.isActive ? 'Active' : 'Suspended',
+                                      ),
+                                      backgroundColor: item.isActive
+                                          ? Colors.green.shade100
+                                          : Colors.red.shade100,
                                     ),
-                                    backgroundColor: item.isActive
-                                        ? Colors.green.shade100
-                                        : Colors.red.shade100,
-                                  ),
+                                  // Display warning badge for 30-day alerts (H4.2)
+                                  if (alertTier == AlertTier.warning30) ...[
+                                    const SizedBox(width: 8),
+                                    Chip(
+                                      avatar: const Icon(
+                                        Icons.warning_amber,
+                                        size: 18,
+                                        color: Colors.orange,
+                                      ),
+                                      label: const Text('Expiring Soon'),
+                                      backgroundColor: Colors.orange.shade100,
+                                    ),
+                                  ],
                                 ],
                               ),
                               const SizedBox(height: 6),
@@ -117,6 +234,14 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
                               if (item.expiresAt != null)
                                 Text(
                                   'Expires: ${dateFormat.format(item.expiresAt!.toLocal())}',
+                                  style: TextStyle(
+                                    color: alertTier == AlertTier.expired
+                                        ? Colors.red.shade700
+                                        : null,
+                                    fontWeight: alertTier == AlertTier.expired
+                                        ? FontWeight.bold
+                                        : null,
+                                  ),
                                 ),
                               Text(
                                 'Updated: ${dateFormat.format(item.updatedAt.toLocal())}',
@@ -175,6 +300,122 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        labelText: 'Search by school name',
+        hintText: 'Type to filter tenants...',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _searchController.clear();
+                },
+              )
+            : null,
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Plan filter chips
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            const Text(
+              'Plan:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 4),
+            FilterChip(
+              label: const Text('All'),
+              selected: _planFilter == null,
+              onSelected: (selected) {
+                setState(() {
+                  _planFilter = null;
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('Starter'),
+              selected: _planFilter == 'starter',
+              onSelected: (selected) {
+                setState(() {
+                  _planFilter = selected ? 'starter' : null;
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('Professional'),
+              selected: _planFilter == 'professional',
+              onSelected: (selected) {
+                setState(() {
+                  _planFilter = selected ? 'professional' : null;
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('Enterprise'),
+              selected: _planFilter == 'enterprise',
+              onSelected: (selected) {
+                setState(() {
+                  _planFilter = selected ? 'enterprise' : null;
+                });
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Status filter chips
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            const Text(
+              'Status:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 4),
+            FilterChip(
+              label: const Text('All'),
+              selected: _activeFilter == null,
+              onSelected: (selected) {
+                setState(() {
+                  _activeFilter = null;
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('Active'),
+              selected: _activeFilter == true,
+              onSelected: (selected) {
+                setState(() {
+                  _activeFilter = selected ? true : null;
+                });
+              },
+            ),
+            FilterChip(
+              label: const Text('Suspended'),
+              selected: _activeFilter == false,
+              onSelected: (selected) {
+                setState(() {
+                  _activeFilter = selected ? false : null;
+                });
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -395,5 +636,67 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
     }
 
     return normalized;
+  }
+
+  /// Q2: Export tenant list to CSV
+  Future<void> _handleExportCsv() async {
+    try {
+      // Fetch all tenants from TenantUsageBillingView (Q2.2)
+      final tenants = await widget.syncEngine.database
+          .watchTenantUsageBillingViews()
+          .first;
+
+      // Create CSV export service
+      final csvService = CSVExportService(
+        database: widget.syncEngine.database,
+      );
+
+      // Generate CSV content (Q2.2, Q2.3, Q2.5, Q2.6)
+      final csvContent = await csvService.exportTenantList(tenants);
+
+      // Save CSV file (Q2.4)
+      // Note: This will show a placeholder message since platform-specific
+      // file save is not yet implemented
+      try {
+        await csvService.saveCsvFile(csvContent);
+      } catch (e) {
+        // Show CSV content in a dialog as fallback
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('CSV Export'),
+              content: SingleChildScrollView(
+                child: SelectableText(csvContent),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported ${tenants.length} tenants to CSV'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to export CSV: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

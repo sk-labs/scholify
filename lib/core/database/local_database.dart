@@ -1281,6 +1281,64 @@ class AppLocalDatabase extends _$AppLocalDatabase {
     );
   }
 
+  /// Query failed sync entries for the Sync Failure Page (A2.1)
+  /// Returns entries where retryCount > 0 AND status != 'synced'
+  /// Ordered by lastAttemptAt DESC (most recent failures first)
+  Future<List<SyncQueueEntry>> getFailedSyncEntries() {
+    return (select(syncQueueEntries)
+          ..where((tbl) {
+            final hasRetries = tbl.retryCount.isBiggerThanValue(0);
+            final notSynced = tbl.status.equals('synced').not();
+            return hasRetries & notSynced;
+          })
+          ..orderBy([
+            (tbl) => OrderingTerm.desc(tbl.lastAttemptAt),
+          ]))
+        .get();
+  }
+
+  /// Watch failed sync entries for reactive UI updates
+  Stream<List<SyncQueueEntry>> watchFailedSyncEntries() {
+    return (select(syncQueueEntries)
+          ..where((tbl) {
+            final hasRetries = tbl.retryCount.isBiggerThanValue(0);
+            final notSynced = tbl.status.equals('synced').not();
+            return hasRetries & notSynced;
+          })
+          ..orderBy([
+            (tbl) => OrderingTerm.desc(tbl.lastAttemptAt),
+          ]))
+        .watch();
+  }
+
+  /// Retry all failed sync entries by resetting their retry state
+  /// Sets retryCount=0, status='pending', lastAttemptAt=null
+  /// Returns the count of entries that were reset
+  Future<int> retryAllFailedEntries() async {
+    return (update(syncQueueEntries)
+          ..where((tbl) {
+            final hasRetries = tbl.retryCount.isBiggerThanValue(0);
+            final notSynced = tbl.status.equals('synced').not();
+            return hasRetries & notSynced;
+          }))
+        .write(
+      SyncQueueEntriesCompanion(
+        retryCount: const Value(0),
+        status: const Value('pending'),
+        lastAttemptAt: const Value(null),
+      ),
+    );
+  }
+
+  /// Dismiss a sync entry by deleting it from the queue
+  /// Returns true if the entry was deleted, false if not found
+  Future<bool> dismissSyncEntry(int entryId) async {
+    final deletedCount = await (delete(syncQueueEntries)
+          ..where((tbl) => tbl.id.equals(entryId)))
+        .go();
+    return deletedCount > 0;
+  }
+
   Future<DateTime?> getLastPullCheckpoint(String entityType) async {
     final row = await (select(
       syncCheckpointEntries,
@@ -1989,6 +2047,59 @@ class AppLocalDatabase extends _$AppLocalDatabase {
           .toList(),
     );
   }
+
+  // ── Audit Log Methods ──────────────────────────────────────────────────
+
+  Stream<List<AuditLogEntry>> watchAuditLogEntries({
+    int limit = 50,
+    int offset = 0,
+    String? entityTypeFilter,
+    String? actorIdFilter,
+  }) {
+    final query = select(auditLogEntries)
+      ..orderBy([
+        (tbl) => OrderingTerm.desc(tbl.timestamp),
+      ])
+      ..limit(limit, offset: offset);
+
+    if (entityTypeFilter != null) {
+      query.where((tbl) => tbl.entityType.equals(entityTypeFilter));
+    }
+
+    if (actorIdFilter != null) {
+      query.where((tbl) => tbl.actorId.equals(actorIdFilter));
+    }
+
+    return query.watch();
+  }
+
+  Future<List<String>> getDistinctAuditEntityTypes() async {
+    final query = selectOnly(auditLogEntries, distinct: true)
+      ..addColumns([auditLogEntries.entityType])
+      ..orderBy([OrderingTerm.asc(auditLogEntries.entityType)]);
+
+    final results = await query.get();
+    return results
+        .map((row) => row.read(auditLogEntries.entityType))
+        .where((type) => type != null)
+        .cast<String>()
+        .toList();
+  }
+
+  Future<List<String>> getDistinctAuditActorIds() async {
+    final query = selectOnly(auditLogEntries, distinct: true)
+      ..addColumns([auditLogEntries.actorId])
+      ..orderBy([OrderingTerm.asc(auditLogEntries.actorId)]);
+
+    final results = await query.get();
+    return results
+        .map((row) => row.read(auditLogEntries.actorId))
+        .where((actorId) => actorId != null)
+        .cast<String>()
+        .toList();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
 
   Future<void> createOrUpdateSchoolOwner({
     required String ownerId,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../core/access/module_access_policy.dart';
 import '../core/database/local_database.dart';
+import '../core/services/license_alert_service.dart';
+import '../core/services/seat_limit_enforcement_service.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/tenant/tenant_context.dart';
 import '../features/attendance/presentation/attendance_overview_page.dart';
@@ -133,6 +135,9 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           page: SuperadminDashboardPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
+            licenseAlertService: LicenseAlertService(
+              database: widget.syncEngine.database,
+            ),
           ),
         ),
       if (access[ScholifyModuleFeature.students] ?? false)
@@ -160,6 +165,9 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           page: StudentEnrollmentPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
+            seatLimitEnforcementService: SeatLimitEnforcementService(
+              database: widget.syncEngine.database,
+            ),
           ),
         ),
       if (access[ScholifyModuleFeature.classRoll] ?? false)

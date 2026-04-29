@@ -1,97 +1,64 @@
-/// Service for comparing plan tiers in the Scholify platform
+/// Service for comparing plan tiers
 /// 
 /// Feature: scholify-roadmap-tracker
-/// Task: 3.5
-/// 
-/// This service implements plan comparison logic to determine if a plan upgrade
-/// request is valid. The plan hierarchy is: starter < professional < enterprise.
-/// 
-/// Valid upgrades:
-/// - starter → professional
-/// - starter → enterprise
-/// - professional → enterprise
-/// 
-/// Invalid (same or downgrade):
-/// - starter → starter
-/// - professional → starter
-/// - professional → professional
-/// - enterprise → starter
-/// - enterprise → professional
-/// - enterprise → enterprise
-/// 
 /// Requirements: B2.3
-
+/// 
+/// This service provides plan comparison logic to determine if a requested plan
+/// is an upgrade, downgrade, or the same as the current plan.
 class PlanComparisonService {
-  /// Plan hierarchy: starter < professional < enterprise
-  static const Map<String, int> _planHierarchy = {
-    'starter': 1,
-    'professional': 2,
-    'enterprise': 3,
-  };
+  /// Plan hierarchy (lower index = lower tier)
+  static const List<String> _planHierarchy = [
+    'starter',
+    'professional',
+    'enterprise',
+  ];
 
-  /// Compares two plans and returns true if the requested plan is higher than the current plan
+  /// Checks if the requested plan is higher than the current plan
   /// 
-  /// Parameters:
-  /// - currentPlan: The current plan code (case-insensitive)
-  /// - requestedPlan: The requested plan code (case-insensitive)
+  /// Property 14: Plan upgrade comparison
+  /// For any pair of plans (current, requested), the comparison SHALL return:
+  /// - true if requested plan tier > current plan tier
+  /// - false if requested plan tier <= current plan tier
   /// 
-  /// Returns:
-  /// - true if requestedPlan > currentPlan in the hierarchy
-  /// - false if requestedPlan <= currentPlan or if either plan is invalid
-  /// 
-  /// Examples:
-  /// - comparePlans('starter', 'professional') → true
-  /// - comparePlans('starter', 'enterprise') → true
-  /// - comparePlans('professional', 'enterprise') → true
-  /// - comparePlans('starter', 'starter') → false
-  /// - comparePlans('professional', 'starter') → false
-  /// - comparePlans('invalid', 'professional') → false
-  bool comparePlans(String currentPlan, String requestedPlan) {
-    // Normalize to lowercase for case-insensitive comparison
-    final normalizedCurrent = currentPlan.toLowerCase().trim();
-    final normalizedRequested = requestedPlan.toLowerCase().trim();
+  /// Requirements: B2.3
+  bool isUpgrade(String currentPlan, String requestedPlan) {
+    final currentIndex = _planHierarchy.indexOf(currentPlan.toLowerCase());
+    final requestedIndex = _planHierarchy.indexOf(requestedPlan.toLowerCase());
 
-    // Get hierarchy values
-    final currentValue = _planHierarchy[normalizedCurrent];
-    final requestedValue = _planHierarchy[normalizedRequested];
-
-    // If either plan is invalid, return false
-    if (currentValue == null || requestedValue == null) {
+    // If either plan is not found, treat as invalid (not an upgrade)
+    if (currentIndex == -1 || requestedIndex == -1) {
       return false;
     }
 
-    // Return true if requested plan is higher than current plan
-    return requestedValue > currentValue;
+    return requestedIndex > currentIndex;
   }
 
-  /// Validates if a plan code is valid
+  /// Gets all plans that are higher than the current plan
   /// 
-  /// Parameters:
-  /// - planCode: The plan code to validate (case-insensitive)
-  /// 
-  /// Returns:
-  /// - true if the plan code is one of: starter, professional, enterprise
-  /// - false otherwise
-  bool isValidPlan(String planCode) {
-    final normalized = planCode.toLowerCase().trim();
-    return _planHierarchy.containsKey(normalized);
+  /// Returns a list of plan codes that represent valid upgrade options
+  List<String> getUpgradeOptions(String currentPlan) {
+    final currentIndex = _planHierarchy.indexOf(currentPlan.toLowerCase());
+
+    // If current plan not found, return empty list
+    if (currentIndex == -1) {
+      return [];
+    }
+
+    // Return all plans with higher index
+    return _planHierarchy.sublist(currentIndex + 1);
   }
 
-  /// Gets the hierarchy value for a plan
-  /// 
-  /// Parameters:
-  /// - planCode: The plan code (case-insensitive)
-  /// 
-  /// Returns:
-  /// - The hierarchy value (1 for starter, 2 for professional, 3 for enterprise)
-  /// - null if the plan is invalid
-  int? getPlanValue(String planCode) {
-    final normalized = planCode.toLowerCase().trim();
-    return _planHierarchy[normalized];
-  }
-
-  /// Gets all valid plan codes
-  List<String> getValidPlans() {
-    return _planHierarchy.keys.toList();
+  /// Gets the display name for a plan code
+  String getPlanDisplayName(String planCode) {
+    switch (planCode.toLowerCase()) {
+      case 'starter':
+        return 'Starter';
+      case 'professional':
+        return 'Professional';
+      case 'enterprise':
+        return 'Enterprise';
+      default:
+        return planCode;
+    }
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/auth/session_manager.dart';
 import '../core/constants/branding.dart';
+import '../core/services/license_alert_service.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/tenant/tenant_context.dart';
 import '../features/auth/presentation/sign_in_page.dart';
@@ -67,6 +68,9 @@ class _ScholifyAppState extends State<ScholifyApp> {
             '/superadmin': (context) => SuperadminDashboardPage(
               tenantContext: widget.tenantContext,
               syncEngine: widget.syncEngine,
+              licenseAlertService: LicenseAlertService(
+                database: widget.syncEngine.database,
+              ),
             ),
           },
           home: home,
