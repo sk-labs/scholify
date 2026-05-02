@@ -100,105 +100,105 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - **Property 2: Wizard plan and seat limit validation**
     - **Validates: Requirements H1.3**
   
-  - [~] 3.3 Write property test for wizard email validation
+  - [x] 3.3 Write property test for wizard email validation
     - **Property 3: Wizard email validation**
     - **Validates: Requirements H1.4**
   
-  - [~] 3.4 Write property test for signup password validation
+  - [x] 3.4 Write property test for signup password validation
     - **Property 13: Signup password length validation**
     - **Validates: Requirements B1.8**
   
-  - [~] 3.5 Write property test for plan upgrade comparison
+  - [x] 3.5 Write property test for plan upgrade comparison
     - **Property 14: Plan upgrade comparison**
     - **Validates: Requirements B2.3**
   
-  - [~] 3.6 Write property test for logo file size validation
+  - [x] 3.6 Write property test for logo file size validation
     - **Property 15: Logo file size validation**
     - **Validates: Requirements B3.7**
   
-  - [~] 3.7 Write property test for logo encoding round-trip
+  - [x] 3.7 Write property test for logo encoding round-trip
     - **Property 16: Logo encoding round-trip**
     - **Validates: Requirements B3.8**
 
-- [~] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ### Phase 2: HIGH IMPACT Features (Week 3-4)
 
 - [ ] 5. Implement Tenant Onboarding Wizard (H1)
-  - [ ] 5.1 Create OnboardingWizardPage with 3-step flow
+  - [x] 5.1 Create OnboardingWizardPage with 3-step flow
     - Build step 1: Tenant identity (school name input, tenant_id derivation)
     - Build step 2: License configuration (plan dropdown, seat limit input)
     - Build step 3: Owner email (email input, validation)
     - Add step navigation controls and progress indicator
     - _Requirements: H1.1, H1.2, H1.3, H1.4_
   
-  - [ ] 5.2 Implement wizard validation logic
+  - [x] 5.2 Implement wizard validation logic
     - Validate school name is non-empty and tenant_id is unique
     - Validate plan is one of starter/professional/enterprise
     - Validate seat limit is positive integer
     - Validate email contains @ and domain segment
     - _Requirements: H1.2, H1.3, H1.4_
   
-  - [ ] 5.3 Implement wizard atomic write with transaction
+  - [x] 5.3 Implement wizard atomic write with transaction
     - Begin Drift transaction
     - Insert TenantRecord, TenantLicenseEntry, SchoolOwnerEntry
     - Enqueue 3 sync operations
     - Commit transaction or rollback on failure
     - _Requirements: H1.5, H1.6_
   
-  - [ ] 5.4 Integrate wizard with AuditLogService
+  - [x] 5.4 Integrate wizard with AuditLogService
     - Log tenant creation to audit log
     - Log license issuance to audit log
     - Log owner provisioning to audit log
     - _Requirements: H3.1_
   
-  - [ ] 5.5 Write property test for wizard atomic write
+  - [x] 5.5 Write property test for wizard atomic write
     - **Property 4: Wizard atomic write**
     - **Validates: Requirements H1.5**
   
-  - [ ] 5.6 Write widget tests for wizard UI
+  - [x] 5.6 Write widget tests for wizard UI
     - Test step navigation and validation error display
     - Test confirmation summary display
     - Test progress indicator during save
     - _Requirements: H1.7, H1.8_
 
 - [ ] 6. Implement Tenant Search and Filtering (H2)
-  - [ ] 6.1 Enhance TenantLicensingPage with search field
+  - [x] 6.1 Enhance TenantLicensingPage with search field
     - Add search text field with debouncing (300ms)
     - Implement case-insensitive substring matching
     - Update tenant list reactively on search input
     - _Requirements: H2.1, H2.3_
   
-  - [ ] 6.2 Add filter chips for plan and status
+  - [x] 6.2 Add filter chips for plan and status
     - Add plan filter chips (All, Starter, Professional, Enterprise)
     - Add status filter chips (All, Active, Suspended)
     - Implement filter chip selection logic
     - _Requirements: H2.4, H2.5, H2.6_
   
-  - [ ] 6.3 Implement combined filter logic
+  - [x] 6.3 Implement combined filter logic
     - Apply search query AND plan filter AND status filter
     - Display empty state message when no results
     - _Requirements: H2.7, H2.8_
   
-  - [ ] 6.4 Write property test for filter composition
+  - [x] 6.4 Write property test for filter composition
     - **Property 5: Tenant filter composition (metamorphic)**
     - **Validates: Requirements H2.1, H2.5, H2.6, H2.7**
 
 - [ ] 7. Implement Audit Log (H3)
-  - [ ] 7.1 Create SuperadminAuditPage with pagination
+  - [x] 7.1 Create SuperadminAuditPage with pagination
     - Build audit log list view with 50 entries per page
     - Display: timestamp, actor, entity type, entity ID, operation, changed fields
     - Implement pagination controls
     - _Requirements: H3.4_
   
-  - [ ] 7.2 Add audit log filtering
+  - [x] 7.2 Add audit log filtering
     - Add entity type filter dropdown
     - Add actor filter dropdown
     - Implement filter query logic
     - _Requirements: H3.5, H3.6_
   
-  - [ ] 7.3 Integrate audit logging into write operations
+  - [x] 7.3 Integrate audit logging into write operations
     - Hook AuditLogService into TenantRecord writes
     - Hook AuditLogService into TenantLicenseEntry writes
     - Hook AuditLogService into SchoolOwnerEntry writes
@@ -206,17 +206,9 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Hook AuditLogService into StudentEnrollmentEntry writes
     - _Requirements: H3.1_
   
-  - [ ] 7.4 Write property test for audit log filtering
-    - **Property 8: Audit log filter correctness**
-    - **Validates: Requirements H3.5, H3.6**
-  
-  - [ ] 7.5 Write integration test for audit log sync
-    - Test push-only sync behavior
-    - Verify audit entries are not pulled from server
-    - _Requirements: H3.8_
 
 - [ ] 8. Implement License Expiry Alerts (H4)
-  - [ ] 8.1 Integrate LicenseAlertService into SuperadminDashboard
+  - [x] 8.1 Integrate LicenseAlertService into SuperadminDashboard
     - Call computeAlerts on app launch and after sync
     - Display warning badges on tenant cards (30d)
     - Display amber alert banner (14d)
@@ -224,13 +216,13 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Display "Expired" status for past expiry dates
     - _Requirements: H4.1, H4.2, H4.3, H4.4, H4.5_
   
-  - [ ] 8.2 Implement alert banner UI components
+  - [x] 8.2 Implement alert banner UI components
     - Build amber banner for 14-day alerts
     - Build red banner for 7-day alerts
     - List affected tenant names and expiry dates
     - _Requirements: H4.3, H4.4_
   
-  - [ ] 8.3 Add manual sync trigger for alert refresh
+  - [x] 8.3 Add manual sync trigger for alert refresh
     - Recompute alerts on manual sync without app restart
     - _Requirements: H4.7_
 
@@ -240,7 +232,7 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
 ### Phase 3: ARCHITECTURE / RELIABILITY Features (Week 5)
 
 - [ ] 10. Implement PocketBase Rules Verification (A1)
-  - [ ] 10.1 Create bin/verify_pocketbase_rules.dart script
+  - [x] 10.1 Create bin/verify_pocketbase_rules.dart script
     - Load expected rules from docs/POCKETBASE_TENANT_RULES.md
     - Query PocketBase Admin API for each collection
     - Compare listRule, viewRule, createRule, updateRule, deleteRule
@@ -248,7 +240,7 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Exit 0 if all match, exit 1 if any mismatch
     - _Requirements: A1.1, A1.2, A1.3, A1.4_
   
-  - [ ] 10.2 Write integration test for rules verifier
+  - [x] 10.2 Write integration test for rules verifier
     - Test with local PocketBase instance
     - Test correct rule scenario
     - Test wrong rule scenario
@@ -256,24 +248,24 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - _Requirements: A1.5, A1.6_
 
 - [ ] 11. Implement Sync Failure Visibility (A2)
-  - [ ] 11.1 Create SyncFailurePage with failed entry list
+  - [x] 11.1 Create SyncFailurePage with failed entry list
     - Query SyncQueueEntries where retryCount > 0 AND syncedAt IS NULL
     - Display: entity type, entity ID, operation, retry count, error message, timestamp
     - Order by updatedAt DESC
     - _Requirements: A2.1, A2.2_
   
-  - [ ] 11.2 Add "Retry All" and "Dismiss" actions
+  - [x] 11.2 Add "Retry All" and "Dismiss" actions
     - Implement "Retry All" button to re-enqueue all failed entries
     - Implement per-entry "Dismiss" button to remove from queue
     - Display "All operations synced successfully" when no failures
     - _Requirements: A2.3, A2.4, A2.6_
   
-  - [ ] 11.3 Add warning icon to FoundationShell app bar
+  - [x] 11.3 Add warning icon to FoundationShell app bar
     - Display persistent warning icon when failed entry count > 0
     - Navigate to SyncFailurePage on icon tap
     - _Requirements: A2.7_
   
-  - [ ] 11.4 Write property test for warning icon invariant
+  - [x] 11.4 Write property test for warning icon invariant
     - **Property 10: Sync failure warning icon invariant**
     - **Validates: Requirements A2.7**
   
@@ -282,7 +274,7 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - _Requirements: A2.3_
 
 - [ ] 12. Implement Seat Limit Enforcement (A3)
-  - [ ] 12.1 Integrate SeatLimitEnforcementService into StudentEnrollmentPage
+  - [x] 12.1 Integrate SeatLimitEnforcementService into StudentEnrollmentPage
     - Call checkSeatLimit before inserting StudentEnrollmentEntry
     - Catch SeatLimitExceededException and display error message
     - Display message: "Seat limit reached. Contact your administrator to upgrade the plan."
@@ -302,19 +294,19 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
 
 ### Phase 4: BUSINESS / GROWTH Features (Week 6-7)
 
-- [ ] 14. Implement Self-Service Tenant Signup (B1)
-  - [ ] 14.1 Create SelfServiceSignupPage (unauthenticated)
+- [x] 14. Implement Self-Service Tenant Signup (B1)
+  - [x] 14.1 Create SelfServiceSignupPage (unauthenticated)
     - Build signup form with: school name, owner full name, owner email, password
     - Make page accessible without authentication
     - _Requirements: B1.1, B1.2_
   
-  - [ ] 14.2 Implement SignupService with validation
+  - [x] 14.2 Implement SignupService with validation
     - Validate email is not already registered in PocketBase
     - Validate password length >= 8 characters
     - Display "An account with this email already exists" on duplicate
     - _Requirements: B1.3, B1.4, B1.8_
   
-  - [ ] 14.3 Implement signup provisioning with rollback
+  - [x] 14.3 Implement signup provisioning with rollback
     - Create PocketBase user account
     - Create TenantRecord with isActive=true
     - Create TenantLicenseEntry with planCode='starter', seatLimit=100
@@ -327,15 +319,15 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Test rollback on failure
     - _Requirements: B1.7_
 
-- [ ] 15. Implement Plan Upgrade Request Flow (B2)
-  - [ ] 15.1 Create PlanUpgradePage for school owners
+- [x] 15. Implement Plan Upgrade Request Flow (B2)
+  - [x] 15.1 Create PlanUpgradePage for school owners
     - Display current plan (read-only)
     - Add requested plan dropdown (only higher plans)
     - Add optional message textarea
     - Add "Submit Request" button
     - _Requirements: B2.1, B2.2_
   
-  - [ ] 15.2 Implement upgrade request submission
+  - [x] 15.2 Implement upgrade request submission
     - Validate requested plan > current plan
     - Insert PlanUpgradeRequestEntry with status='pending'
     - Enqueue sync operation
@@ -343,7 +335,7 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Display pending request status if already exists
     - _Requirements: B2.3, B2.4, B2.8_
   
-  - [ ] 15.3 Build upgrade request review UI for superadmin
+  - [x] 15.3 Build upgrade request review UI for superadmin
     - Add "Upgrade Requests" badge to SuperadminDashboard
     - List pending requests with tenant name, plans, message
     - Add "Approve" button to update license and set status='approved'
@@ -355,15 +347,15 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Verify upgrade/downgrade/same detection
     - _Requirements: B2.3_
 
-- [ ] 16. Implement Per-Tenant Branding (B3)
-  - [ ] 16.1 Create BrandingSettingsPage for school owners
+- [x] 16. Implement Per-Tenant Branding (B3)
+  - [x] 16.1 Create BrandingSettingsPage for school owners
     - Add display name input (pre-filled with tenant name)
     - Add logo upload button (PNG/JPEG, max 2MB)
     - Add logo preview
     - Add "Save" and "Remove Logo" buttons
     - _Requirements: B3.1_
   
-  - [ ] 16.2 Implement branding save logic
+  - [x] 16.2 Implement branding save logic
     - Validate image size <= 2MB
     - Encode image to base64
     - Upsert TenantBrandingEntry
@@ -382,13 +374,13 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Test configured vs default branding rendering
     - _Requirements: B3.3, B3.4, B3.5_
 
-- [ ] 17. Implement Usage Analytics for Superadmin (B4)
-  - [ ] 17.1 Create UsageAnalyticsPage with tenant metrics table
+- [x] 17. Implement Usage Analytics for Superadmin (B4)
+  - [x] 17.1 Create UsageAnalyticsPage with tenant metrics table
     - Display columns: Tenant Name, Plan, Active Students, Active Staff, MAU, Storage GB, Module Engagement
     - Source data from TenantUsageMetricEntries
     - _Requirements: B4.1, B4.2, B4.4_
   
-  - [ ] 17.2 Add staleness indicator
+  - [x] 17.2 Add staleness indicator
     - Check if updatedAt > 24h ago
     - Display "⚠ Data may be stale" next to tenant row
     - _Requirements: B4.5_
@@ -402,12 +394,12 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Display 6-month MAU time-series chart
     - _Requirements: B4.3_
   
-  - [ ] 17.5 Implement module engagement summary
+  - [x] 17.5 Implement module engagement summary
     - Query AuditLogEntries for distinct entity types with writes in last 30 days
     - Display module engagement count per tenant
     - _Requirements: B4.2_
   
-  - [ ] 17.6 Add CSV export for usage analytics
+  - [x] 17.6 Add CSV export for usage analytics
     - Implement "Export CSV" button
     - Include columns: tenant name, plan, active students, active staff, MAU, storage
     - _Requirements: B4.6_
@@ -417,14 +409,14 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
 
 ### Phase 5: QUICK WINS Features (Week 8)
 
-- [ ] 19. Implement Tenant Detail Page (Q1)
-  - [ ] 19.1 Create TenantDetailPage with comprehensive info
+- [x] 19. Implement Tenant Detail Page (Q1)
+  - [x] 19.1 Create TenantDetailPage with comprehensive info
     - Display: tenant name, tenant ID, plan, seat limit, activation status, license expiry, owner email
     - Display: active student count, active staff count, MAU, storage GB, outstanding amount, overdue invoices
     - Load all data from local Drift tables without network call
     - _Requirements: Q1.1, Q1.2_
   
-  - [ ] 19.2 Add action buttons to TenantDetailPage
+  - [x] 19.2 Add action buttons to TenantDetailPage
     - Add "Impersonate" button to set TenantContext with isSuperAdmin=true
     - Add "Edit License" button to navigate to TenantLicensingPage
     - Add "Suspend / Activate" toggle to call setTenantLicenseStatus
@@ -434,12 +426,12 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Verify TenantContext state after impersonate button tap
     - _Requirements: Q1.3_
 
-- [ ] 20. Implement Export Tenant List to CSV (Q2)
-  - [ ] 20.1 Add "Export CSV" button to TenantListPage
+- [x] 20. Implement Export Tenant List to CSV (Q2)
+  - [x] 20.1 Add "Export CSV" button to TenantListPage
     - Make button visible only to Superadmin users
     - _Requirements: Q2.1_
   
-  - [ ] 20.2 Implement CSV export with RFC 4180 compliance
+  - [x] 20.2 Implement CSV export with RFC 4180 compliance
     - Generate UTF-8 encoded CSV with header row
     - Include columns: tenant_name, tenant_id, plan, seat_limit, is_active, license_expires_at, owner_email, active_students, outstanding_amount
     - Escape fields with commas, quotes, newlines per RFC 4180
@@ -447,20 +439,20 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Handle empty tenant list (header row only)
     - _Requirements: Q2.2, Q2.3, Q2.4, Q2.5, Q2.6_
 
-- [ ] 21. Implement Impersonate Tenant (Q3)
-  - [ ] 21.1 Add "Impersonate" action to tenant list rows
+- [x] 21. Implement Impersonate Tenant (Q3)
+  - [x] 21.1 Add "Impersonate" action to tenant list rows
     - Make action visible only to Superadmin users
     - Call ImpersonationService.startImpersonation on tap
     - Set TenantContext with tenantId, tenantName, role='school_owner', isSuperAdmin=true
     - _Requirements: Q3.1, Q3.2_
   
-  - [ ] 21.2 Build impersonation banner in FoundationShell
+  - [x] 21.2 Build impersonation banner in FoundationShell
     - Display persistent banner: "Impersonating: [tenant name] — tap to exit"
     - Call ImpersonationService.endImpersonation on banner tap
     - Restore Superadmin's original TenantContext
     - _Requirements: Q3.3, Q3.4_
   
-  - [ ] 21.3 Render module destinations for impersonated tenant
+  - [x] 21.3 Render module destinations for impersonated tenant
     - Display modules appropriate for tenant's plan and feature flags
     - _Requirements: Q3.5_
   
@@ -468,15 +460,15 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Test impersonation start and end state changes
     - _Requirements: Q3.2, Q3.4_
 
-- [ ] 22. Implement Superadmin Dashboard Summary Cards (Q4)
-  - [ ] 22.1 Add 4 summary cards to SuperadminDashboard
+- [x] 22. Implement Superadmin Dashboard Summary Cards (Q4)
+  - [x] 22.1 Add 4 summary cards to SuperadminDashboard
     - Build "Total Tenants" card (count of all TenantLicenseEntries)
     - Build "Active" card (count where isActive=true)
     - Build "At Risk" card (count where seat utilization >= 90% OR overdueInvoices > 0 OR outstandingAmount > 0)
     - Build "Expiring Soon" card (count where active AND expiresAt <= now + 30 days)
     - _Requirements: Q4.1, Q4.2, Q4.3, Q4.4, Q4.5, Q4.6_
   
-  - [ ] 22.2 Implement reactive card value updates
+  - [x] 22.2 Implement reactive card value updates
     - Compute card values from TenantUsageBillingView stream
     - Update all cards within one frame on stream emit
     - _Requirements: Q4.7_
@@ -507,18 +499,18 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Test: fail → display → retry → succeed → verify entry removed
     - _Requirements: A2.3, A2.5_
 
-- [ ] 25. Performance optimization
-  - [ ] 25.1 Add database indexes for frequently queried columns
+- [x] 25. Performance optimization
+  - [x] 25.1 Add database indexes for frequently queried columns
     - Add indexes to TenantRecords: (tenant_id), (updated_at DESC)
     - Add indexes to AuditLogEntries: (tenant_id, timestamp DESC), (entity_type, timestamp DESC), (actor_id, timestamp DESC)
     - Add indexes to TenantLicenseEntries: (tenant_id), (expires_at), (is_active)
     - _Requirements: Performance considerations from design_
   
-  - [ ] 25.2 Implement search debouncing
+  - [x] 25.2 Implement search debouncing
     - Add 300ms debounce to tenant search field
     - _Requirements: H2.3_
   
-  - [ ] 25.3 Optimize CSV export for large datasets
+  - [x] 25.3 Optimize CSV export for large datasets
     - Implement streaming for tenant lists > 1000 rows
     - Run CSV generation on background isolate
     - _Requirements: Performance considerations from design_
