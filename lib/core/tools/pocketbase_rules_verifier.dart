@@ -1,11 +1,10 @@
-/// Pure logic for PocketBase rules verification.
-///
-/// Extracted from bin/verify_pocketbase_rules.dart so it can be unit-tested
-/// without a live PocketBase instance.
-///
-/// Feature: scholify-roadmap-tracker
-/// Requirements: A1.1, A1.2, A1.3, A1.4
-library pocketbase_rules_verifier;
+// Pure logic for PocketBase rules verification.
+//
+// Extracted from bin/verify_pocketbase_rules.dart so it can be unit-tested
+// without a live PocketBase instance.
+//
+// Feature: scholify-roadmap-tracker
+// Requirements: A1.1, A1.2, A1.3, A1.4
 
 // ── Data types ────────────────────────────────────────────────────────────────
 

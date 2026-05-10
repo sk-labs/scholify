@@ -158,7 +158,7 @@ class _SuperadminAuditPageState extends State<SuperadminAuditPage> {
                   ),
                   const SizedBox(height: 4),
                   DropdownButtonFormField<String?>(
-                    value: _entityTypeFilter,
+                    initialValue: _entityTypeFilter,
                     decoration: const InputDecoration(
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(),
@@ -199,7 +199,7 @@ class _SuperadminAuditPageState extends State<SuperadminAuditPage> {
                   ),
                   const SizedBox(height: 4),
                   DropdownButtonFormField<String?>(
-                    value: _actorIdFilter,
+                    initialValue: _actorIdFilter,
                     decoration: const InputDecoration(
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       border: OutlineInputBorder(),

@@ -388,7 +388,7 @@ class _MauTimeSeriesChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: yMax / 5,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             strokeWidth: 1,
           ),
         ),
@@ -421,7 +421,7 @@ class _MauTimeSeriesChart extends StatelessWidget {
                   if (parts.length >= 2) {
                     final month = int.parse(parts[1]);
                     label = DateFormat('MMM').format(DateTime(0, month));
-                    if (parts.length >= 1) label += '\n${parts[0]}';
+                    if (parts.isNotEmpty) label += '\n${parts[0]}';
                   } else {
                     label = periodKey;
                   }
@@ -471,7 +471,7 @@ class _MauTimeSeriesChart extends StatelessWidget {
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: colorScheme.primary.withOpacity(0.12),
+              color: colorScheme.primary.withValues(alpha: 0.12),
             ),
           ),
         ],
