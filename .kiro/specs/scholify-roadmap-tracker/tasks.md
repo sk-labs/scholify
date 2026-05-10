@@ -269,7 +269,7 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - **Property 10: Sync failure warning icon invariant**
     - **Validates: Requirements A2.7**
   
-  - [ ] 11.5 Write unit test for retry idempotence
+  - [x] 11.5 Write unit test for retry idempotence
     - Verify retrying already-synced entry doesn't create duplicate
     - _Requirements: A2.3_
 
@@ -281,11 +281,11 @@ This implementation plan covers 11 planned features across 4 priority tiers for 
     - Include current count and limit in error message
     - _Requirements: A3.1, A3.2, A3.3_
   
-  - [ ] 12.2 Write unit test for seat limit with null/zero handling
+  - [x] 12.2 Write unit test for seat limit with null/zero handling
     - Test that null or zero seatLimit allows unrestricted enrollment
     - _Requirements: A3.5_
   
-  - [ ] 12.3 Write integration test for seat count decrease on delete
+  - [x] 12.3 Write integration test for seat count decrease on delete
     - Verify freed seat becomes available after enrollment deletion
     - _Requirements: A3.6_
 
