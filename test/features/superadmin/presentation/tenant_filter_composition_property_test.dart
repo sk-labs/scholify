@@ -82,7 +82,7 @@ void main() {
           issuedAt: DateTime.now().subtract(Duration(days: random.nextInt(365))),
           expiresAt: DateTime.now().add(Duration(days: random.nextInt(365))),
           updatedAt: DateTime.now(),
-          schoolOwnerEmail: 'admin@${tenantId}.edu',
+          schoolOwnerEmail: 'admin@$tenantId.edu',
         );
       });
     }

@@ -177,8 +177,8 @@ void main() {
         final numCycles = random.nextInt(10) + 1;
         
         for (int cycle = 0; cycle < numCycles; cycle++) {
-          final tenantId = 'tenant_${iteration}_${cycle}';
-          final tenantName = 'Test School ${iteration}_${cycle}';
+          final tenantId = 'tenant_${iteration}_$cycle';
+          final tenantName = 'Test School ${iteration}_$cycle';
           
           // BEFORE START: Banner should not be shown
           expect(

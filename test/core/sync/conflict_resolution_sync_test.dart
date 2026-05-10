@@ -10,11 +10,9 @@ import 'package:scholify/core/tenant/tenant_context.dart';
 class _ConflictGateway extends PocketbaseGateway {
   _ConflictGateway({
     this.examScheduleRecords = const [],
-    this.examMarkRecords = const [],
   }) : super(baseUrl: 'http://127.0.0.1:8090');
 
   final List<Map<String, dynamic>> examScheduleRecords;
-  final List<Map<String, dynamic>> examMarkRecords;
 
   int pushedExamScheduleCount = 0;
   final List<String> pushedExamNames = <String>[];
@@ -231,7 +229,7 @@ class _ConflictGateway extends PocketbaseGateway {
   Future<List<Map<String, dynamic>>> pullStudentExamMarks({
     DateTime? since,
     String? tenantId,
-  }) async => examMarkRecords;
+  }) async => const [];
 }
 
 void main() {

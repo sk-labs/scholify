@@ -122,7 +122,7 @@ void main() {
         final numTenants = random.nextInt(5) + 1;
         final tenants = List.generate(
           numTenants,
-          (i) => 'tenant_${iteration}_${i}',
+          (i) => 'tenant_${iteration}_$i',
         );
         
         int globalCount = 0;

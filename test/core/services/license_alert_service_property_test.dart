@@ -266,8 +266,8 @@ void main() {
           final hasExpiry = random.nextBool();
           
           licenses.add(TenantLicenseView(
-            licenseId: 'lic_$iteration\_$i',
-            tenantId: 'tenant_$iteration\_$i',
+            licenseId: 'lic_${iteration}_$i',
+            tenantId: 'tenant_${iteration}_$i',
             tenantName: 'School $i',
             schoolOwnerEmail: 'owner$i@test.com',
             planCode: _randomPlan(random),
@@ -325,8 +325,8 @@ void main() {
           final isActive = random.nextBool();
           
           licenses.add(TenantLicenseView(
-            licenseId: 'lic_$iteration\_$i',
-            tenantId: 'tenant_$iteration\_$i',
+            licenseId: 'lic_${iteration}_$i',
+            tenantId: 'tenant_${iteration}_$i',
             tenantName: 'School $i',
             schoolOwnerEmail: 'owner$i@test.com',
             planCode: _randomPlan(random),

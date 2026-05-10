@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:scholify/core/database/local_database.dart';
 import 'package:scholify/core/remote/pocketbase_gateway.dart';
 import 'package:scholify/core/services/audit_log_service.dart';
-import 'package:scholify/core/services/wizard_validation_service.dart';
-import 'package:scholify/core/sync/sync_engine.dart';
 import 'package:scholify/core/tenant/tenant_context.dart';
 
 /// Integration test for OnboardingWizard audit log integration
@@ -19,8 +17,6 @@ import 'package:scholify/core/tenant/tenant_context.dart';
 /// - Owner provisioning
 void main() {
   late AppLocalDatabase database;
-  late SyncEngine syncEngine;
-  late WizardValidationService validationService;
   late AuditLogService auditLogService;
   late PocketbaseGateway gateway;
   late TenantContext tenantContext;
@@ -38,12 +34,6 @@ void main() {
     );
     
     gateway = PocketbaseGateway(baseUrl: 'http://test.local');
-    syncEngine = SyncEngine(
-      database: database,
-      pocketbaseGateway: gateway,
-      tenantContext: tenantContext,
-    );
-    validationService = WizardValidationService(database: database);
     auditLogService = AuditLogService(
       database: database,
       tenantContext: tenantContext,
