@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:scholify/app/app_runtime.dart';
 import 'package:scholify/core/database/local_database.dart';
 import 'package:scholify/core/services/impersonation_service.dart';
 import 'package:scholify/core/sync/sync_engine.dart';
+import 'package:scholify/features/superadmin/presentation/tenant_licensing_page.dart';
 
 /// Tenant Detail Page (Q1)
 /// 
@@ -273,12 +275,24 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
     }
   }
 
-  /// Q1.4: Navigate to edit license page
+  /// Q1.4: Navigate to edit license page (TenantLicensingPage)
   void _handleEditLicense(TenantUsageBillingView tenant) {
-    // Navigate to TenantLicensingPage (implementation depends on routing setup)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigate to Tenant Licensing Page (to be implemented)'),
+    final tenantContext = AppRuntime.tenantContext;
+    if (tenantContext == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tenant context available to edit licenses.'),
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TenantLicensingPage(
+          tenantContext: tenantContext,
+          syncEngine: widget.syncEngine,
+        ),
       ),
     );
   }

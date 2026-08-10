@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'csv_download_platform.dart';
 import '../database/local_database.dart';
 
 /// Service for exporting tenant lists to CSV files with RFC 4180 compliance.
@@ -85,13 +86,15 @@ class CSVExportService {
   /// Triggers a platform-specific file save dialog or share sheet.
   ///
   /// Requirements: Q2.4
-  Future<void> saveCsvFile(String csvContent, {String filename = 'tenants.csv'}) async {
+  Future<String?> saveCsvFile(String csvContent, {String filename = 'tenants.csv'}) async {
     if (kIsWeb) {
-      _downloadCsvWeb(csvContent, filename);
+      // Browser download via conditional import (dart:html).
+      return saveCsvBytes(csvContent, filename);
     } else if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      await _shareCsvMobile(csvContent, filename);
+      // Mobile: write to a documents directory via path_provider.
+      return _saveCsvDesktop(csvContent, filename);
     } else {
-      await _saveCsvDesktop(csvContent, filename);
+      return _saveCsvDesktop(csvContent, filename);
     }
   }
 
@@ -163,19 +166,17 @@ class CSVExportService {
 
   // ── Platform save implementations ─────────────────────────────────────────
 
-  /// Web has no filesystem access; returns the CSV so callers can present it.
-  void _downloadCsvWeb(String csvContent, String filename) {
-    throw UnimplementedError('Web CSV download requires file_picker/share_plus.');
-  }
-
-  Future<void> _shareCsvMobile(String csvContent, String filename) async {
-    await _saveCsvDesktop(csvContent, filename);
-  }
-
-  Future<void> _saveCsvDesktop(String csvContent, String filename) async {
-    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}${Platform.pathSeparator}$filename');
-    await file.writeAsString(csvContent, encoding: utf8, flush: true);
+  /// Writes the CSV to a local directory; returns the file path.
+  Future<String?> _saveCsvDesktop(String csvContent, String filename) async {
+    try {
+      final dir = await getDownloadsDirectory() ??
+          await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}${Platform.pathSeparator}$filename');
+      await file.writeAsString(csvContent, encoding: utf8, flush: true);
+      return file.path;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
