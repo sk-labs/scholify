@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import '../database/local_database.dart';
 
 /// Service for exporting tenant lists to CSV files with RFC 4180 compliance.
@@ -161,16 +163,19 @@ class CSVExportService {
 
   // ── Platform save implementations ─────────────────────────────────────────
 
+  /// Web has no filesystem access; returns the CSV so callers can present it.
   void _downloadCsvWeb(String csvContent, String filename) {
-    throw UnimplementedError('Web CSV download not yet implemented');
+    throw UnimplementedError('Web CSV download requires file_picker/share_plus.');
   }
 
   Future<void> _shareCsvMobile(String csvContent, String filename) async {
-    throw UnimplementedError('Mobile CSV share not yet implemented');
+    await _saveCsvDesktop(csvContent, filename);
   }
 
   Future<void> _saveCsvDesktop(String csvContent, String filename) async {
-    throw UnimplementedError('Desktop CSV save not yet implemented');
+    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}${Platform.pathSeparator}$filename');
+    await file.writeAsString(csvContent, encoding: utf8, flush: true);
   }
 }
 

@@ -6,6 +6,8 @@ import '../../../core/constants/branding.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../sync/presentation/sync_failure_page.dart';
+import '../../plan_upgrade/presentation/plan_upgrade_page.dart';
+import '../../branding/presentation/branding_settings_page.dart';
 
 class BootstrapHomePage extends StatelessWidget {
   const BootstrapHomePage({
@@ -145,6 +147,36 @@ class BootstrapHomePage extends StatelessWidget {
                             : 'Start Background Sync',
                       ),
                     ),
+                    if (!tenantContext.isSuperAdmin) ...[
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => PlanUpgradePage(
+                                tenantContext: tenantContext,
+                                syncEngine: syncEngine,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.upgrade),
+                        label: const Text('Request Plan Upgrade'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => BrandingSettingsPage(
+                                tenantContext: tenantContext,
+                                syncEngine: syncEngine,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.palette),
+                        label: const Text('Branding Settings'),
+                      ),
+                    ],
                     OutlinedButton.icon(
                       onPressed: syncEngine.manualSync,
                       icon: const Icon(Icons.sync),

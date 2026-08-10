@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/audit_log_service.dart';
+import '../../../core/services/impersonation_service.dart';
 import '../../../core/services/license_alert_service.dart';
+import '../../../core/services/wizard_validation_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/database/local_database.dart';
+import '../../dashboard/presentation/dashboard_summary_cards.dart';
+import '../../plan_upgrade/presentation/plan_upgrade_review_page.dart';
+import '../../tenant_detail/presentation/tenant_detail_page.dart';
+import '../../usage_analytics/presentation/usage_analytics_page.dart';
 import 'feature_flag_access_page.dart';
+import 'onboarding_wizard_page.dart';
 import 'school_owner_provisioning_page.dart';
+import 'superadmin_audit_page.dart';
 import 'tenant_licensing_page.dart';
 import 'usage_billing_monitor_page.dart';
 
@@ -51,6 +61,32 @@ class SuperadminDashboardPage extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: ListView(
                     children: [
+                      // Q4: Dashboard summary metric cards
+                      DashboardSummaryCards(syncEngine: syncEngine),
+                      const SizedBox(height: 16),
+                      _ModuleCard(
+                        title: 'Tenant Onboarding Wizard',
+                        subtitle:
+                            'Guided 3-step flow to create a tenant, issue a license, and provision the owner.',
+                        trailing: superadminMode ? 'Create Tenant' : 'Restricted',
+                        onTap: () {
+                          final auditLogService = AuditLogService(
+                            database: syncEngine.database,
+                            tenantContext: tenantContext,
+                            gateway: syncEngine.pocketbaseGateway,
+                          );
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => OnboardingWizardPage(
+                                syncEngine: syncEngine,
+                                validationService:
+                                    WizardValidationService(database: syncEngine.database),
+                                auditLogService: auditLogService,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                       _ModuleCard(
                         title: 'Tenant Licensing',
                         subtitle:
@@ -115,6 +151,60 @@ class SuperadminDashboardPage extends StatelessWidget {
                           );
                         },
                       ),
+                      _ModuleCard(
+                        title: 'Audit Log',
+                        subtitle:
+                            'Review write operations, actors, and entity changes.',
+                        trailing: 'View Log',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => SuperadminAuditPage(
+                                syncEngine: syncEngine,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _ModuleCard(
+                        title: 'Plan Upgrade Requests',
+                        subtitle:
+                            'Approve or reject tenant plan upgrade requests.',
+                        trailing: 'Review',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => PlanUpgradeReviewPage(
+                                tenantContext: tenantContext,
+                                syncEngine: syncEngine,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _ModuleCard(
+                        title: 'Usage Analytics',
+                        subtitle:
+                            'Per-tenant usage metrics, MAU trends, and CSV export.',
+                        trailing: 'View Analytics',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => UsageAnalyticsPage(
+                                tenantContext: tenantContext,
+                                syncEngine: syncEngine,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _ModuleCard(
+                        title: 'Tenant Details',
+                        subtitle:
+                            'Open a tenant detail view (single tenant management).',
+                        trailing: 'Pick Tenant',
+                        onTap: () => _openTenantDetailPicker(context),
+                      ),
                     ],
                   ),
                 ),
@@ -123,6 +213,56 @@ class SuperadminDashboardPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Opens a tenant picker dialog and navigates to TenantDetailPage.
+  Future<void> _openTenantDetailPicker(BuildContext context) async {
+    final views = await syncEngine.database.watchTenantUsageBillingViews().first;
+    if (views.isEmpty || !context.mounted) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No tenants available.')),
+        );
+      }
+      return;
+    }
+
+    final selected = await showDialog<TenantUsageBillingView>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Select Tenant'),
+        children: [
+          for (final view in views)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(dialogContext).pop(view),
+              child: Text(
+                '${view.tenantName} (${view.planCode ?? '-'})',
+              ),
+            ),
+        ],
+      ),
+    );
+
+    if (selected == null || !context.mounted) return;
+
+    final impersonationService = ImpersonationService(
+      tenantContext: tenantContext,
+      auditLogService: AuditLogService(
+        database: syncEngine.database,
+        tenantContext: tenantContext,
+        gateway: syncEngine.pocketbaseGateway,
+      ),
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TenantDetailPage(
+          tenantId: selected.tenantId,
+          syncEngine: syncEngine,
+          impersonationService: impersonationService,
+        ),
+      ),
     );
   }
 

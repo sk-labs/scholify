@@ -1,4 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -300,39 +304,64 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
     );
   }
 
+  static const int _maxLogoSizeBytes = 2 * 1024 * 1024; // 2 MB (B3.7)
+
   Future<void> _pickLogo() async {
-    // For now, show a message that file picking requires additional setup
-    // In a real implementation, you would use file_picker package or platform-specific file dialogs
     if (!mounted) return;
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Logo upload requires file_picker package. '
-          'Add "file_picker" to pubspec.yaml to enable this feature.',
-        ),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
-    
-    // TODO: Implement file picking when file_picker package is added
-    // Example implementation:
-    // final result = await FilePicker.platform.pickFiles(
-    //   type: FileType.image,
-    //   allowMultiple: false,
-    // );
-    // if (result != null && result.files.isNotEmpty) {
-    //   final bytes = result.files.first.bytes;
-    //   if (bytes != null && bytes.length <= _maxLogoSizeBytes) {
-    //     setState(() {
-    //       _selectedLogoBytes = bytes;
-    //     });
-    //   }
-    // }
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final picked = result.files.single;
+      Uint8List? bytes = picked.bytes;
+
+      if (bytes == null && picked.path != null && !kIsWeb) {
+        final file = File(picked.path!);
+        if (await file.exists()) {
+          bytes = await file.readAsBytes();
+        }
+      }
+
+      if (bytes == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not read the selected image file.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // B3.7: Reject files larger than 2 MB
+      if (bytes.length > _maxLogoSizeBytes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image exceeds the 2 MB size limit.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _selectedLogoBytes = bytes;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick logo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _removeLogo() {

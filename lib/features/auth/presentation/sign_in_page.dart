@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/app_runtime.dart';
 import '../../../core/auth/session_manager.dart';
 import '../../../core/constants/branding.dart';
 import 'forgot_password_page.dart';
+import 'self_service_signup_page.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key, required this.sessionManager});
@@ -111,6 +113,14 @@ class _SignInPageState extends State<SignInPage> {
                           child: const Text('Forgot password?'),
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: isBusy ? null : _handleSignUp,
+                          icon: const Icon(Icons.school),
+                          label: const Text('Create a school account'),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -134,5 +144,26 @@ class _SignInPageState extends State<SignInPage> {
     }
 
     await widget.sessionManager.signIn(identity: identity, password: password);
+  }
+
+  Future<void> _handleSignUp() async {
+    final syncEngine = AppRuntime.syncEngine;
+    final tenantContext = AppRuntime.tenantContext;
+    if (syncEngine == null || tenantContext == null) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => SelfServiceSignupPage(
+          pocketbaseGateway: syncEngine.pocketbaseGateway,
+          database: syncEngine.database,
+          syncEngine: syncEngine,
+          tenantContext: tenantContext,
+          onSignupSuccess: () {
+            // Signup auto-signs-in; pop back so the app shell is shown.
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        ),
+      ),
+    );
   }
 }

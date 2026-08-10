@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/local_database.dart';
+import '../../../core/services/audit_log_service.dart';
 import '../../../core/services/csv_export_service.dart';
+import '../../../core/services/impersonation_service.dart';
 import '../../../core/services/license_alert_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../tenant_detail/presentation/tenant_detail_page.dart';
 
 class TenantLicensingPage extends StatefulWidget {
   const TenantLicensingPage({
@@ -39,6 +42,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
   bool? _activeFilter; // null = all, true = active, false = suspended
   
   late final LicenseAlertService _licenseAlertService;
+  late final ImpersonationService _impersonationService;
   Map<String, AlertTier> _alertTiers = {};
 
   static const List<String> _plans = ['starter', 'professional', 'enterprise'];
@@ -49,6 +53,14 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
     _searchController.addListener(_onSearchChanged);
     _licenseAlertService = LicenseAlertService(
       database: widget.syncEngine.database,
+    );
+    _impersonationService = ImpersonationService(
+      tenantContext: widget.tenantContext,
+      auditLogService: AuditLogService(
+        database: widget.syncEngine.database,
+        tenantContext: widget.tenantContext,
+        gateway: widget.syncEngine.pocketbaseGateway,
+      ),
     );
     
     // Watch alerts and build a map of tenantId -> AlertTier
@@ -285,6 +297,28 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
                                     },
                                     icon: const Icon(Icons.switch_account),
                                     label: const Text('Set Context'),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => TenantDetailPage(
+                                            tenantId: item.tenantId,
+                                            syncEngine: widget.syncEngine,
+                                            impersonationService:
+                                                _impersonationService,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.visibility),
+                                    label: const Text('Details'),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () =>
+                                        _handleImpersonate(item),
+                                    icon: const Icon(Icons.person_search),
+                                    label: const Text('Impersonate'),
                                   ),
                                 ],
                               ),
@@ -636,6 +670,33 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
     }
 
     return normalized;
+  }
+
+  /// Q3: Impersonate a tenant directly from the licensing list
+  Future<void> _handleImpersonate(TenantLicenseView item) async {
+    try {
+      await _impersonationService.startImpersonation(
+        item.tenantId,
+        item.tenantName,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Now impersonating ${item.tenantName}'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to impersonate: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// Q2: Export tenant list to CSV
