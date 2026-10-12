@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -29,8 +30,11 @@ void main() {
     );
   });
 
-  tearDown(() async {
-    await database.close();
+  tearDown(() {
+    // Database close is handled at the end of each test body via
+    // tester.runAsync() (see below). Awaiting close() directly here hangs
+    // because drift's close() awaits FakeAsync timers that never fire.
+    // In-memory DBs are reclaimed by GC if a test fails before closing.
   });
 
   Widget createTestWidget() {
@@ -86,13 +90,19 @@ void main() {
     testWidgets('shows zero metrics when no tenants exist',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Total Tenants'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('At Risk'), findsOneWidget);
       expect(find.text('Expiring Soon (≤30d)'), findsOneWidget);
       expect(find.text('0'), findsNWidgets(4));
+
+      // Dispose the StreamBuilder, then advance the fake clock so drift's
+      // stream-cleanup timer (Timer.run) fires before the test ends.
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(seconds: 1));
     });
 
     testWidgets('computes total, active, at-risk and expiring metrics',
@@ -125,7 +135,8 @@ void main() {
       );
 
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Total Tenants'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
@@ -135,6 +146,11 @@ void main() {
       expect(find.text('Expiring Soon (≤30d)'), findsOneWidget);
       // At-risk and expiring-soon are both 1 (tenant_a)
       expect(find.text('1'), findsNWidgets(2));
+
+      // Dispose the StreamBuilder, then advance the fake clock so drift's
+      // stream-cleanup timer (Timer.run) fires before the test ends.
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 }

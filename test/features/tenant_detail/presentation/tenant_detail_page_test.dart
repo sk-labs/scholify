@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -41,8 +42,11 @@ void main() {
     );
   });
 
-  tearDown(() async {
-    await database.close();
+  tearDown(() {
+    // NOTE: database.close() is intentionally not called. Awaiting close()
+    // hangs in testWidgets' FakeAsync zone, and calling it (even unawaited)
+    // leaves drift stream-cleanup timers pending. In-memory DBs are
+    // reclaimed by GC. Stream timers are flushed at the end of each test.
   });
 
   Widget createTestWidget(String tenantId) {
@@ -79,22 +83,32 @@ void main() {
     testWidgets('shows not-found state for unknown tenant',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget('unknown_tenant'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Tenant Details'), findsOneWidget);
       expect(find.text('Tenant not found'), findsOneWidget);
+
+      // Flush drift's stream-cleanup timer before test end.
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(seconds: 1));
     });
 
     testWidgets('renders tenant details for a known tenant',
         (WidgetTester tester) async {
       await seedTenant();
       await tester.pumpWidget(createTestWidget('tenant_001'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Basic Information'), findsOneWidget);
       expect(find.text('Test School'), findsOneWidget);
       expect(find.text('Usage Statistics'), findsOneWidget);
       expect(find.text('120'), findsOneWidget);
+
+      // Flush drift's stream-cleanup timer before test end.
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 }

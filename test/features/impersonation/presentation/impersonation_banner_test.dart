@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,8 +47,11 @@ void main() {
     );
   });
 
-  tearDown(() async {
-    await database.close();
+  tearDown(() {
+    // NOTE: close() is not awaited here. Awaiting it hangs inside
+    // testWidgets' FakeAsync zone when the in-memory drift DB has writes.
+    // In-memory DBs are reclaimed by GC; close is best-effort here.
+    unawaited(database.close());
   });
 
   Widget createTestWidget() {
@@ -62,7 +66,8 @@ void main() {
     testWidgets('renders nothing when impersonation is inactive',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(ImpersonationBanner), findsOneWidget);
       expect(find.textContaining('Impersonating'), findsNothing);
@@ -76,7 +81,8 @@ void main() {
       );
 
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.textContaining('Test School'), findsOneWidget);
       expect(find.textContaining('tap to exit'), findsOneWidget);
@@ -90,11 +96,13 @@ void main() {
       );
 
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(impersonationService.isImpersonating, isTrue);
 
       await tester.tap(find.textContaining('Test School'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(impersonationService.isImpersonating, isFalse);
       expect(find.text('Impersonation ended'), findsOneWidget);

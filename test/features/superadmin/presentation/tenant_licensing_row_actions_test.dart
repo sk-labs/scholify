@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,8 +41,11 @@ void main() {
     );
   });
 
-  tearDown(() async {
-    await database.close();
+  tearDown(() {
+    // NOTE: database.close() is intentionally not called. Awaiting close()
+    // hangs in testWidgets' FakeAsync zone, and calling it (even unawaited)
+    // leaves drift stream-cleanup timers pending. In-memory DBs are
+    // reclaimed by GC. Stream timers are flushed at the end of each test.
   });
 
   Widget createTestWidget() {
@@ -67,9 +71,16 @@ void main() {
   group('TenantLicensingPage row actions', () {
     testWidgets('Impersonate action starts impersonation for the row tenant',
         (WidgetTester tester) async {
+      // Use a large surface: the page overflows the default 800x600 test
+      // viewport (RenderFlex overflow).
+      tester.view.physicalSize = const Size(1600, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       await seedTenant();
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.widgetWithText(OutlinedButton, 'Impersonate'),
@@ -77,7 +88,8 @@ void main() {
       );
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'Impersonate'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text('Now impersonating Greenwood High School'),
@@ -85,25 +97,33 @@ void main() {
       );
       expect(tenantContext.tenantId, equals('greenwood_high'));
 
-      // Dispose to clean up the search debounce timer
+      // Dispose to flush the search debounce timer and drift's
+      // stream-cleanup timer before the test ends.
       await tester.pumpWidget(Container());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
     });
 
     testWidgets('Details action navigates to TenantDetailPage',
         (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1600, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
       await seedTenant();
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'Details'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Tenant Details'), findsOneWidget);
 
-      // Dispose to clean up the search debounce timer
+      // Dispose to flush the search debounce timer and drift's
+      // stream-cleanup timer before the test ends.
       await tester.pumpWidget(Container());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 }
