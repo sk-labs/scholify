@@ -10,6 +10,7 @@ import '../core/services/license_alert_service.dart';
 import '../core/services/seat_limit_enforcement_service.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/tenant/tenant_context.dart';
+import '../features/impersonation/presentation/impersonation_banner.dart';
 import '../features/attendance/presentation/attendance_overview_page.dart';
 import '../features/bootstrap/presentation/bootstrap_home_page.dart';
 import '../features/curriculum/presentation/curriculum_page.dart';
@@ -417,16 +418,14 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final impersonationBanner = _impersonationService.isImpersonating
-            ? _buildImpersonationBanner()
-            : null;
-
         if (constraints.maxWidth < 900) {
           return Scaffold(
             appBar: _buildBrandingAppBar(compact: true),
             body: Column(
               children: [
-                if (impersonationBanner != null) impersonationBanner,
+                ImpersonationBanner(
+                  impersonationService: _impersonationService,
+                ),
                 Expanded(child: destinations[activeIndex].page),
               ],
             ),
@@ -452,7 +451,9 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           appBar: _buildBrandingAppBar(compact: false),
           body: Column(
             children: [
-              if (impersonationBanner != null) impersonationBanner,
+              ImpersonationBanner(
+                impersonationService: _impersonationService,
+              ),
               Expanded(
                 child: Row(
                   children: [
@@ -519,47 +520,6 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       centerTitle: false,
-    );
-  }
-
-  /// Builds the impersonation banner (Q3.3, Q3.4).
-  /// Tapping the banner ends impersonation and restores the original context.
-  Widget _buildImpersonationBanner() {
-    final tenantName = _impersonationService.impersonatedTenantName ?? 'Unknown';
-    return Material(
-      color: Colors.amber.shade700,
-      child: InkWell(
-        onTap: () async {
-          try {
-            await _impersonationService.endImpersonation();
-          } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to end impersonation: $e')),
-              );
-            }
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              const Icon(Icons.visibility, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Impersonating: $tenantName — tap to exit',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Icon(Icons.close, color: Colors.white, size: 18),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
