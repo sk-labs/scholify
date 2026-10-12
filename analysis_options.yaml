@@ -18,6 +18,13 @@ analyzer:
     - third_party/**
     # Legacy Drift web executor — migration to wasm is a separate task.
     - lib/core/database/executors/database_executor_web.dart
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   rules:
