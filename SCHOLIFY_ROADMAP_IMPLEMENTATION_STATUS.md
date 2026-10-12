@@ -297,11 +297,11 @@ This document tracks the implementation progress of the Scholify multi-tenant sc
 
 ## Integration Requirements
 
-### Immediate Integration Needed:
-1. **ImpersonationBanner**: Add to Foundation Shell
-2. **DashboardSummaryCards**: Add to Superadmin Dashboard
-3. **Impersonate Actions**: Add to tenant list rows
-4. **TenantDetailPage**: Add navigation from tenant lists
+### Completed Integrations (verified 2026-10-12):
+1. **ImpersonationBanner** ✅: Wired into Foundation Shell (`lib/app/scholify_shell_page.dart`) via the reusable `ImpersonationBanner` widget in both mobile and desktop layouts (commit `c4aedea`; replaced a prior inline duplicate).
+2. **DashboardSummaryCards** ✅: Already present on the Superadmin Dashboard (`lib/features/superadmin/presentation/superadmin_dashboard_page.dart`).
+3. **Impersonate Actions** ✅: Already present on tenant list rows (`lib/features/superadmin/presentation/tenant_licensing_page.dart`, `_handleImpersonate`).
+4. **TenantDetailPage** ✅: Navigation already wired from tenant lists (`tenant_licensing_page.dart`).
 
 ### Optional Enhancements:
 1. Platform-specific CSV file save
