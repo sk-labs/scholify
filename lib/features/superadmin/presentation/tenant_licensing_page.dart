@@ -18,10 +18,15 @@ class TenantLicensingPage extends StatefulWidget {
     super.key,
     required this.tenantContext,
     required this.syncEngine,
+    this.initialActiveFilter,
   });
 
   final TenantContext tenantContext;
   final SyncEngine syncEngine;
+
+  /// Optional initial value for the active/suspended filter, used for
+  /// tap-to-filter navigation from the dashboard summary cards.
+  final bool? initialActiveFilter;
 
   @override
   State<TenantLicensingPage> createState() => _TenantLicensingPageState();
@@ -50,6 +55,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
   @override
   void initState() {
     super.initState();
+    _activeFilter = widget.initialActiveFilter;
     _searchController.addListener(_onSearchChanged);
     _licenseAlertService = LicenseAlertService(
       database: widget.syncEngine.database,
@@ -182,149 +188,47 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
                     itemBuilder: (context, index) {
                       final item = licenses[index];
                       final alertTier = _alertTiers[item.tenantId];
-                      
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      item.tenantName,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  // Display expired status (H4.5)
-                                  if (alertTier == AlertTier.expired)
-                                    Chip(
-                                      label: const Text('Expired'),
-                                      backgroundColor: Colors.red.shade700,
-                                      labelStyle: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    )
-                                  else
-                                    Chip(
-                                      label: Text(
-                                        item.isActive ? 'Active' : 'Suspended',
-                                      ),
-                                      backgroundColor: item.isActive
-                                          ? Colors.green.shade100
-                                          : Colors.red.shade100,
-                                    ),
-                                  // Display warning badge for 30-day alerts (H4.2)
-                                  if (alertTier == AlertTier.warning30) ...[
-                                    const SizedBox(width: 8),
-                                    Chip(
-                                      avatar: const Icon(
-                                        Icons.warning_amber,
-                                        size: 18,
-                                        color: Colors.orange,
-                                      ),
-                                      label: const Text('Expiring Soon'),
-                                      backgroundColor: Colors.orange.shade100,
-                                    ),
-                                  ],
-                                ],
+
+                      return _TenantLicenseCard(
+                        item: item,
+                        alertTier: alertTier,
+                        dateFormat: dateFormat,
+                        onActivate: item.isActive
+                            ? null
+                            : () => _setLicenseStatus(item, true),
+                        onSuspend: item.isActive
+                            ? () => _setLicenseStatus(item, false)
+                            : null,
+                        onSetContext: () {
+                          widget.tenantContext.setTenant(
+                            tenantId: item.tenantId,
+                            tenantName: item.tenantName,
+                            role: 'school_owner',
+                            isSuperAdmin: true,
+                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Tenant context switched to ${item.tenantName}.',
                               ),
-                              const SizedBox(height: 6),
-                              Text('Tenant ID: ${item.tenantId}'),
-                              Text('Owner: ${item.schoolOwnerEmail}'),
-                              Text(
-                                'Plan: ${item.planCode.toUpperCase()} | Seats: ${item.seatLimit}',
+                            ),
+                          );
+                        },
+                        onDetails: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => TenantDetailPage(
+                                tenantId: item.tenantId,
+                                syncEngine: widget.syncEngine,
+                                impersonationService:
+                                    _impersonationService,
                               ),
-                              Text(
-                                'Issued: ${dateFormat.format(item.issuedAt.toLocal())}',
-                              ),
-                              if (item.expiresAt != null)
-                                Text(
-                                  'Expires: ${dateFormat.format(item.expiresAt!.toLocal())}',
-                                  style: TextStyle(
-                                    color: alertTier == AlertTier.expired
-                                        ? Colors.red.shade700
-                                        : null,
-                                    fontWeight: alertTier == AlertTier.expired
-                                        ? FontWeight.bold
-                                        : null,
-                                  ),
-                                ),
-                              Text(
-                                'Updated: ${dateFormat.format(item.updatedAt.toLocal())}',
-                              ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  OutlinedButton.icon(
-                                    onPressed: item.isActive
-                                        ? null
-                                        : () => _setLicenseStatus(item, true),
-                                    icon: const Icon(Icons.play_arrow),
-                                    label: const Text('Activate'),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: item.isActive
-                                        ? () => _setLicenseStatus(item, false)
-                                        : null,
-                                    icon: const Icon(Icons.pause),
-                                    label: const Text('Suspend'),
-                                  ),
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      widget.tenantContext.setTenant(
-                                        tenantId: item.tenantId,
-                                        tenantName: item.tenantName,
-                                        role: 'school_owner',
-                                        isSuperAdmin: true,
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Tenant context switched to ${item.tenantName}.',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.switch_account),
-                                    label: const Text('Set Context'),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => TenantDetailPage(
-                                            tenantId: item.tenantId,
-                                            syncEngine: widget.syncEngine,
-                                            impersonationService:
-                                                _impersonationService,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.visibility),
-                                    label: const Text('Details'),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: () =>
-                                        _handleImpersonate(item),
-                                    icon: const Icon(Icons.person_search),
-                                    label: const Text('Impersonate'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
+                        onImpersonate: () => _handleImpersonate(item),
                       );
                     },
                   );
@@ -759,5 +663,330 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
         );
       }
     }
+  }
+}
+
+/// Redesigned tenant license row card.
+///
+/// Layout: header row (tenant name + status chips), compact detail rows with
+/// icons, an expiry progress bar, and a clean action row — primary actions
+/// (Details, Impersonate) visible, secondary actions (Activate/Suspend,
+/// Set Context) in an overflow menu.
+class _TenantLicenseCard extends StatelessWidget {
+  const _TenantLicenseCard({
+    required this.item,
+    required this.alertTier,
+    required this.dateFormat,
+    required this.onActivate,
+    required this.onSuspend,
+    required this.onSetContext,
+    required this.onDetails,
+    required this.onImpersonate,
+  });
+
+  final TenantLicenseView item;
+  final AlertTier? alertTier;
+  final DateFormat dateFormat;
+  final VoidCallback? onActivate;
+  final VoidCallback? onSuspend;
+  final VoidCallback onSetContext;
+  final VoidCallback onDetails;
+  final VoidCallback onImpersonate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: name + status chips
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.tenantName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'ID: ${item.tenantId}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildStatusChips(context),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Compact detail rows with icons
+            _DetailRow(
+              icon: Icons.email_outlined,
+              label: item.schoolOwnerEmail,
+            ),
+            const SizedBox(height: 6),
+            _DetailRow(
+              icon: Icons.workspace_premium_outlined,
+              label:
+                  '${item.planCode.toUpperCase()}  •  ${item.seatLimit} seats',
+            ),
+            const SizedBox(height: 6),
+            _DetailRow(
+              icon: Icons.event_outlined,
+              label:
+                  'Issued ${dateFormat.format(item.issuedAt.toLocal())}',
+            ),
+            if (item.expiresAt != null) ...[
+              const SizedBox(height: 6),
+              _DetailRow(
+                icon: Icons.schedule_outlined,
+                label:
+                    'Expires ${dateFormat.format(item.expiresAt!.toLocal())}',
+                highlight: alertTier == AlertTier.expired,
+              ),
+              const SizedBox(height: 8),
+              _ExpiryProgressBar(
+                issuedAt: item.issuedAt,
+                expiresAt: item.expiresAt!,
+                alertTier: alertTier,
+              ),
+            ],
+            const Divider(height: 24),
+            // Action row: primary actions visible, rest in overflow menu
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onDetails,
+                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                  label: const Text('Details'),
+                ),
+                const SizedBox(width: 4),
+                FilledButton.tonalIcon(
+                  onPressed: onImpersonate,
+                  icon: const Icon(Icons.person_search_outlined, size: 18),
+                  label: const Text('Impersonate'),
+                ),
+                const Spacer(),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: 'More actions',
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'activate':
+                        onActivate?.call();
+                      case 'suspend':
+                        onSuspend?.call();
+                      case 'set_context':
+                        onSetContext();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'activate',
+                      enabled: onActivate != null,
+                      child: const Row(
+                        children: [
+                          Icon(Icons.play_arrow, size: 20),
+                          SizedBox(width: 12),
+                          Text('Activate'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'suspend',
+                      enabled: onSuspend != null,
+                      child: const Row(
+                        children: [
+                          Icon(Icons.pause, size: 20),
+                          SizedBox(width: 12),
+                          Text('Suspend'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'set_context',
+                      child: Row(
+                        children: [
+                          Icon(Icons.switch_account_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('Set Context'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChips(BuildContext context) {
+    final chips = <Widget>[];
+    if (alertTier == AlertTier.expired) {
+      chips.add(
+        Chip(
+          label: const Text('Expired'),
+          backgroundColor: Colors.red.shade700,
+          labelStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    } else {
+      chips.add(
+        Chip(
+          label: Text(item.isActive ? 'Active' : 'Suspended'),
+          backgroundColor:
+              item.isActive ? Colors.green.shade100 : Colors.red.shade100,
+        ),
+      );
+    }
+    if (alertTier == AlertTier.warning30) {
+      chips.add(const SizedBox(width: 8));
+      chips.add(
+        Chip(
+          avatar: const Icon(
+            Icons.warning_amber,
+            size: 18,
+            color: Colors.orange,
+          ),
+          label: const Text('Expiring Soon'),
+          backgroundColor: Colors.orange.shade100,
+        ),
+      );
+    }
+    return Wrap(
+      alignment: WrapAlignment.end,
+      spacing: 0,
+      runSpacing: 4,
+      children: chips,
+    );
+  }
+}
+
+/// Single compact detail row with a leading icon.
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    this.highlight = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: highlight
+              ? Colors.red.shade700
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: highlight ? Colors.red.shade700 : null,
+              fontWeight: highlight ? FontWeight.w600 : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Visual progress bar showing how much of the license term remains.
+class _ExpiryProgressBar extends StatelessWidget {
+  const _ExpiryProgressBar({
+    required this.issuedAt,
+    required this.expiresAt,
+    required this.alertTier,
+  });
+
+  final DateTime issuedAt;
+  final DateTime expiresAt;
+  final AlertTier? alertTier;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final total = expiresAt.difference(issuedAt);
+    final remaining = expiresAt.difference(now);
+
+    final progress = total.inSeconds <= 0
+        ? 0.0
+        : (remaining.inSeconds / total.inSeconds).clamp(0.0, 1.0);
+
+    final Color barColor;
+    final String label;
+    if (remaining.isNegative || alertTier == AlertTier.expired) {
+      barColor = Colors.red.shade700;
+      label = 'Expired';
+    } else if (remaining.inDays <= 7) {
+      barColor = Colors.red;
+      label = '${remaining.inDays}d left';
+    } else if (remaining.inDays <= 30) {
+      barColor = Colors.orange;
+      label = '${remaining.inDays}d left';
+    } else {
+      barColor = Colors.green;
+      label = '${remaining.inDays}d left';
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: barColor.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: barColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
   }
 }

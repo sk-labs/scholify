@@ -82,11 +82,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(
-        find.widgetWithText(OutlinedButton, 'Impersonate'),
+        find.widgetWithText(FilledButton, 'Impersonate'),
         findsOneWidget,
       );
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Impersonate'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Impersonate'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -113,7 +113,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Details'));
+      await tester.tap(find.widgetWithText(TextButton, 'Details'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
