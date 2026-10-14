@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/teacher_repository.dart';
 
 class TeachersPage extends StatefulWidget {
@@ -34,35 +36,73 @@ class _TeachersPageState extends State<TeachersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    // No page-level AppBar: the shell provides the top bar.
     return Scaffold(
-      appBar: AppBar(title: const Text('Teachers')),
-      body: StreamBuilder<List<TeacherEntry>>(
-        stream: _repository.watchTeachers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          final teachers = snapshot.data ?? const <TeacherEntry>[];
-          if (teachers.isEmpty) {
-            return const Center(child: Text('No teachers found.'));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: teachers.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) =>
-                _buildTeacherCard(teachers[index]),
-          );
-        },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Teachers', style: theme.textTheme.headlineMedium),
+                const SizedBox(height: 4),
+                Text(
+                  'Manage teacher profiles, roles, and reviews.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: StreamBuilder<List<TeacherEntry>>(
+              stream: _repository.watchTeachers(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                final teachers = snapshot.data ?? const <TeacherEntry>[];
+                if (teachers.isEmpty) {
+                  return const ScholifyEmptyState(
+                    icon: Icons.people_outline,
+                    title: 'No teachers yet',
+                    message:
+                        'Add your first teacher and they will appear here.',
+                    accent: ScholifyColors.academicNavy,
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  itemCount: teachers.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) =>
+                      _buildTeacherCard(teachers[index]),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTeacherCard(TeacherEntry teacher) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -70,26 +110,26 @@ class _TeachersPageState extends State<TeachersPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: ScholifyColors.tint(ScholifyColors.academicNavy, 0.08),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
+                top: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: ScholifyColors.tint(
+                    ScholifyColors.academicNavy,
+                    0.14,
+                  ),
                   child: Text(
                     teacher.fullName.isNotEmpty
                         ? teacher.fullName[0].toUpperCase()
                         : 'T',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      color: ScholifyColors.academicNavy,
                     ),
                   ),
                 ),
@@ -115,13 +155,16 @@ class _TeachersPageState extends State<TeachersPage> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.15),
+                                color: ScholifyColors.tint(
+                                  ScholifyColors.scholarTeal,
+                                  0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
                                 'Class Teacher',
                                 style: TextStyle(
-                                  color: Colors.green,
+                                  color: ScholifyColors.scholarTeal,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -167,7 +210,7 @@ class _TeachersPageState extends State<TeachersPage> {
                           i < teacher.ratingScore
                               ? Icons.star
                               : Icons.star_border,
-                          color: Colors.amber,
+                          color: ScholifyColors.achievementAmber,
                           size: 18,
                         ),
                       ),
@@ -203,7 +246,7 @@ class _TeachersPageState extends State<TeachersPage> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: Colors.grey.shade600),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodySmall),
@@ -234,7 +277,7 @@ class _TeachersPageState extends State<TeachersPage> {
                   (i) => IconButton(
                     icon: Icon(
                       i < rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
+                      color: ScholifyColors.achievementAmber,
                     ),
                     onPressed: () => setInner(() => rating = i + 1),
                   ),

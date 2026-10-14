@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/student_repository.dart';
 
 class StudentGuardiansPage extends StatefulWidget {
@@ -55,9 +57,9 @@ class _StudentGuardiansPageState extends State<StudentGuardiansPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Student Guardians (Offline-First)')),
+      // No page-level AppBar: the shell provides the top bar.
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: StreamBuilder<List<StudentDirectoryEntry>>(
           stream: _repository.watchStudents(),
           builder: (context, studentsSnapshot) {
@@ -86,7 +88,17 @@ class _StudentGuardiansPageState extends State<StudentGuardiansPage> {
             final selectedStudentId = _resolveSelectedStudentId(students);
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Guardians', style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 4),
+                Text(
+                  'Link guardians to students and manage contact details.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _buildStudentSelector(students, selectedStudentId),
                 const SizedBox(height: 12),
                 _buildGuardianForm(selectedStudentId),
@@ -112,10 +124,11 @@ class _StudentGuardiansPageState extends State<StudentGuardiansPage> {
 
                       final guardians = guardiansSnapshot.data ?? const [];
                       if (guardians.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No guardians mapped for this student yet.',
-                          ),
+                        return const ScholifyEmptyState(
+                          icon: Icons.family_restroom_outlined,
+                          title: 'No guardians yet',
+                          message: 'Link a guardian to the selected student to get started.',
+                          accent: ScholifyColors.academicNavy,
                         );
                       }
 
@@ -138,6 +151,13 @@ class _StudentGuardiansPageState extends State<StudentGuardiansPage> {
                               _processingGuardianId == guardian.id;
 
                           return Card(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                              ),
+                            ),
                             child: ListTile(
                               title: Text(guardian.fullName),
                               subtitle: Text(meta),
