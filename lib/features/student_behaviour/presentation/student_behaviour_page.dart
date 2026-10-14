@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/student_behaviour_repository.dart';
 
 class StudentBehaviourPage extends StatefulWidget {
@@ -45,10 +47,33 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    // No page-level AppBar: the shell provides the top bar.
     return Scaffold(
-      appBar: AppBar(title: const Text('Student Behaviour')),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Student Behaviour',
+                  style: theme.textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Track incidents and award behaviour points.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
           _buildStudentSelector(),
           if (_activeStudentId.isNotEmpty)
             Expanded(child: _buildIncidentList()),
@@ -59,7 +84,7 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
 
   Widget _buildStudentSelector() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           Expanded(
@@ -101,14 +126,17 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
         }
         final rows = snapshot.data ?? const <StudentBehaviourEntry>[];
         if (rows.isEmpty) {
-          return const Center(
-            child: Text('No behaviour records for this student.'),
+          return const ScholifyEmptyState(
+            icon: Icons.emoji_events_outlined,
+            title: 'No behaviour records',
+            message: 'No incidents recorded for this student yet.',
+            accent: ScholifyColors.achievementAmber,
           );
         }
         return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           itemCount: rows.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) => _buildIncidentCard(rows[index]),
         );
       },
@@ -117,9 +145,16 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
 
   Widget _buildIncidentCard(StudentBehaviourEntry incident) {
     final isPositive = incident.isPositive;
-    final pointColor = isPositive ? Colors.green : Colors.red;
+    final pointColor = isPositive
+        ? ScholifyColors.success
+        : ScholifyColors.error;
+    final scheme = Theme.of(context).colorScheme;
 
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -127,11 +162,9 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isPositive
-                  ? Colors.green.withValues(alpha: 0.1)
-                  : Colors.red.withValues(alpha: 0.1),
+              color: ScholifyColors.tint(pointColor, 0.1),
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
+                top: Radius.circular(16),
               ),
             ),
             child: Row(
@@ -177,7 +210,7 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: scheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -190,7 +223,7 @@ class _StudentBehaviourPageState extends State<StudentBehaviourPage> {
                       Icon(
                         Icons.person_outline,
                         size: 14,
-                        color: Colors.grey.shade600,
+                        color: scheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -283,8 +316,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                     final comments =
                         snapshot.data ?? const <BehaviourCommentEntry>[];
                     if (comments.isEmpty) {
-                      return const Center(
-                        child: Text('No comments yet.'),
+                      return const ScholifyEmptyState(
+                        icon: Icons.chat_bubble_outline,
+                        title: 'No comments yet',
+                        message: 'Be the first to add a comment below.',
+                        accent: ScholifyColors.scholarTeal,
                       );
                     }
                     return ListView.separated(
