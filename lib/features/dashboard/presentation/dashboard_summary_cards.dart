@@ -2,21 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:scholify/core/database/local_database.dart';
 import 'package:scholify/core/sync/sync_engine.dart';
 
+/// The metric a summary card represents. Used for tap-to-filter navigation.
+enum DashboardMetricType {
+  total,
+  active,
+  atRisk,
+  expiringSoon,
+}
+
 /// Dashboard Summary Cards (Q4)
-/// 
+///
 /// Displays four summary metric cards showing platform health at a glance:
 /// - Total Tenants
 /// - Active Tenants
 /// - At Risk Tenants
 /// - Expiring Soon (≤30 days)
-/// 
+///
 /// Requirements: Q4.1, Q4.2, Q4.3, Q4.4, Q4.5, Q4.6, Q4.7
 class DashboardSummaryCards extends StatelessWidget {
   final SyncEngine syncEngine;
 
+  /// Optional callback invoked when a card is tapped, enabling
+  /// tap-to-filter navigation (e.g. open the licensing list filtered).
+  final void Function(DashboardMetricType type)? onCardTap;
+
   const DashboardSummaryCards({
     super.key,
     required this.syncEngine,
+    this.onCardTap,
   });
 
   @override
@@ -78,7 +91,7 @@ class DashboardSummaryCards extends StatelessWidget {
       if (t.licenseActive != true) return false;
       final expiresAt = t.licenseExpiresAt;
       if (expiresAt == null) return false;
-      return expiresAt.isBefore(thirtyDaysFromNow) || 
+      return expiresAt.isBefore(thirtyDaysFromNow) ||
              expiresAt.isAtSameMomentAs(thirtyDaysFromNow);
     }).length;
 
@@ -91,11 +104,12 @@ class DashboardSummaryCards extends StatelessWidget {
   }
 
   Widget _buildCards(BuildContext context, DashboardMetrics metrics) {
+    final tap = onCardTap;
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive layout: 2 columns on mobile, 4 columns on desktop
         final crossAxisCount = constraints.maxWidth > 800 ? 4 : 2;
-        final childAspectRatio = constraints.maxWidth > 800 ? 1.5 : 1.2;
+        final childAspectRatio = constraints.maxWidth > 800 ? 1.35 : 1.15;
 
         return GridView.count(
           crossAxisCount: crossAxisCount,
@@ -109,32 +123,65 @@ class DashboardSummaryCards extends StatelessWidget {
             _SummaryCard(
               title: 'Total Tenants',
               value: metrics.totalTenants.toString(),
+              subtitle: metrics.totalTenants == 1 ? 'school onboard' : 'schools onboard',
               icon: Icons.business,
               color: Colors.blue,
+              // Progress of active vs total gives the card visual depth.
+              progress: metrics.totalTenants == 0
+                  ? 0
+                  : metrics.activeTenants / metrics.totalTenants,
+              progressLabel: '${metrics.activeTenants} active',
+              onTap: tap == null ? null : () => tap(DashboardMetricType.total),
             ),
 
             // Q4.1, Q4.4: Active card
             _SummaryCard(
               title: 'Active',
               value: metrics.activeTenants.toString(),
+              subtitle: metrics.totalTenants == 0
+                  ? 'no tenants yet'
+                  : '${((metrics.activeTenants / metrics.totalTenants) * 100).round()}% of total',
               icon: Icons.check_circle,
               color: Colors.green,
+              progress: metrics.totalTenants == 0
+                  ? 0
+                  : metrics.activeTenants / metrics.totalTenants,
+              progressLabel: 'license health',
+              onTap: tap == null ? null : () => tap(DashboardMetricType.active),
             ),
 
             // Q4.1, Q4.5: At Risk card
             _SummaryCard(
               title: 'At Risk',
               value: metrics.atRiskTenants.toString(),
+              subtitle: metrics.atRiskTenants == 0
+                  ? 'all clear'
+                  : 'need attention',
               icon: Icons.warning,
               color: Colors.orange,
+              progress: metrics.totalTenants == 0
+                  ? 0
+                  : metrics.atRiskTenants / metrics.totalTenants,
+              progressLabel: 'of tenants',
+              onTap: tap == null ? null : () => tap(DashboardMetricType.atRisk),
             ),
 
             // Q4.1, Q4.6: Expiring Soon card
             _SummaryCard(
               title: 'Expiring Soon (≤30d)',
               value: metrics.expiringSoonTenants.toString(),
+              subtitle: metrics.expiringSoonTenants == 0
+                  ? 'no renewals due'
+                  : 'renewals due',
               icon: Icons.schedule,
               color: Colors.red,
+              progress: metrics.activeTenants == 0
+                  ? 0
+                  : metrics.expiringSoonTenants / metrics.activeTenants,
+              progressLabel: 'of active',
+              onTap: tap == null
+                  ? null
+                  : () => tap(DashboardMetricType.expiringSoon),
             ),
           ],
         );
@@ -151,7 +198,7 @@ class _LoadingCards extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.count(
       crossAxisCount: 2,
-      childAspectRatio: 1.2,
+      childAspectRatio: 1.15,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
@@ -199,61 +246,120 @@ class _ErrorCards extends StatelessWidget {
   }
 }
 
-/// Individual summary card widget
+/// Individual summary card widget.
+///
+/// Visual design: tinted surface, icon in a filled circle, large metric
+/// value, title, contextual subtitle, and a thin progress bar that gives
+/// each card depth and a sense of proportion. Tappable when [onTap] is set.
 class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
+  final String subtitle;
   final IconData icon;
   final Color color;
+  final double progress;
+  final String progressLabel;
+  final VoidCallback? onTap;
 
   const _SummaryCard({
     required this.title,
     required this.value,
+    required this.subtitle,
     required this.icon,
     required this.color,
+    required this.progress,
+    required this.progressLabel,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
+    final theme = Theme.of(context);
+    final card = Card(
+      elevation: 0,
+      color: color.withValues(alpha: 0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: color.withValues(alpha: 0.25)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  icon,
-                  color: color,
-                  size: 32,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 22),
                 ),
                 const Spacer(),
+                if (onTap != null)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: color.withValues(alpha: 0.6),
+                  ),
               ],
             ),
-            const SizedBox(height: 12),
+            const Spacer(),
             Text(
               value,
-              style: TextStyle(
-                fontSize: 32,
+              style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
+            ),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress.clamp(0.0, 1.0),
+                      minHeight: 6,
+                      backgroundColor: color.withValues(alpha: 0.15),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  progressLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+
+    if (onTap == null) return card;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: card,
     );
   }
 }

@@ -59,153 +59,42 @@ class SuperadminDashboardPage extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: ListView(
-                    children: [
-                      // Q4: Dashboard summary metric cards
-                      DashboardSummaryCards(syncEngine: syncEngine),
-                      const SizedBox(height: 16),
-                      _ModuleCard(
-                        title: 'Tenant Onboarding Wizard',
-                        subtitle:
-                            'Guided 3-step flow to create a tenant, issue a license, and provision the owner.',
-                        trailing: superadminMode ? 'Create Tenant' : 'Restricted',
-                        onTap: () {
-                          final auditLogService = AuditLogService(
-                            database: syncEngine.database,
-                            tenantContext: tenantContext,
-                            gateway: syncEngine.pocketbaseGateway,
-                          );
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => OnboardingWizardPage(
-                                syncEngine: syncEngine,
-                                validationService:
-                                    WizardValidationService(database: syncEngine.database),
-                                auditLogService: auditLogService,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Tenant Licensing',
-                        subtitle:
-                            'Create licenses, assign plans, and suspend/activate schools.',
-                        trailing: superadminMode ? 'Active' : 'Restricted',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => TenantLicensingPage(
-                                tenantContext: tenantContext,
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'School Owner Provisioning',
-                        subtitle:
-                            'Create owner accounts and bootstrap tenant defaults.',
-                        trailing: activeTenant,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => SchoolOwnerProvisioningPage(
-                                tenantContext: tenantContext,
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Usage and Billing Monitor',
-                        subtitle:
-                            'Track tenant limits, seat counts, and renewal lifecycle.',
-                        trailing: 'Pending sync jobs: ${syncEngine.pendingJobs}',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => UsageBillingMonitorPage(
-                                tenantContext: tenantContext,
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Feature Flags and Add-ons',
-                        subtitle:
-                            'Enable/disable modules per tenant for plan-based access.',
-                        trailing: 'Configure Access',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => FeatureFlagAccessPage(
-                                tenantContext: tenantContext,
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Audit Log',
-                        subtitle:
-                            'Review write operations, actors, and entity changes.',
-                        trailing: 'View Log',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => SuperadminAuditPage(
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Plan Upgrade Requests',
-                        subtitle:
-                            'Approve or reject tenant plan upgrade requests.',
-                        trailing: 'Review',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => PlanUpgradeReviewPage(
-                                tenantContext: tenantContext,
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Usage Analytics',
-                        subtitle:
-                            'Per-tenant usage metrics, MAU trends, and CSV export.',
-                        trailing: 'View Analytics',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => UsageAnalyticsPage(
-                                tenantContext: tenantContext,
-                                syncEngine: syncEngine,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      _ModuleCard(
-                        title: 'Tenant Details',
-                        subtitle:
-                            'Open a tenant detail view (single tenant management).',
-                        trailing: 'Pick Tenant',
-                        onTap: () => _openTenantDetailPicker(context),
-                      ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 800;
+                      return ListView(
+                        children: [
+                          // Q4: Dashboard summary metric cards (tap navigates to licensing)
+                          DashboardSummaryCards(
+                            syncEngine: syncEngine,
+                            onCardTap: (type) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => TenantLicensingPage(
+                                    tenantContext: tenantContext,
+                                    syncEngine: syncEngine,
+                                    initialActiveFilter:
+                                        type == DashboardMetricType.active
+                                            ? true
+                                            : null,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Manage',
+                            style:
+                                Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildModuleGrid(context, isWide, superadminMode, activeTenant),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -213,6 +102,193 @@ class SuperadminDashboardPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Builds the module navigation grid: 2 columns on wide screens,
+  /// single column list on narrow screens.
+  Widget _buildModuleGrid(
+    BuildContext context,
+    bool isWide,
+    bool superadminMode,
+    String activeTenant,
+  ) {
+    final modules = <_ModuleSpec>[
+      _ModuleSpec(
+        title: 'Tenant Onboarding Wizard',
+        subtitle: 'Guided 3-step flow to create a tenant, issue a license, and provision the owner.',
+        status: superadminMode ? 'Create Tenant' : 'Restricted',
+        icon: Icons.person_add,
+        color: Colors.blue,
+        onTap: () {
+          final auditLogService = AuditLogService(
+            database: syncEngine.database,
+            tenantContext: tenantContext,
+            gateway: syncEngine.pocketbaseGateway,
+          );
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => OnboardingWizardPage(
+                syncEngine: syncEngine,
+                validationService:
+                    WizardValidationService(database: syncEngine.database),
+                auditLogService: auditLogService,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Tenant Licensing',
+        subtitle: 'Create licenses, assign plans, and suspend/activate schools.',
+        status: superadminMode ? 'Active' : 'Restricted',
+        icon: Icons.badge,
+        color: Colors.indigo,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => TenantLicensingPage(
+                tenantContext: tenantContext,
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'School Owner Provisioning',
+        subtitle: 'Create owner accounts and bootstrap tenant defaults.',
+        status: activeTenant,
+        icon: Icons.manage_accounts,
+        color: Colors.teal,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SchoolOwnerProvisioningPage(
+                tenantContext: tenantContext,
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Usage and Billing Monitor',
+        subtitle: 'Track tenant limits, seat counts, and renewal lifecycle.',
+        status: 'Pending sync jobs: ${syncEngine.pendingJobs}',
+        icon: Icons.receipt_long,
+        color: Colors.green,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => UsageBillingMonitorPage(
+                tenantContext: tenantContext,
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Feature Flags and Add-ons',
+        subtitle: 'Enable/disable modules per tenant for plan-based access.',
+        status: 'Configure Access',
+        icon: Icons.tune,
+        color: Colors.orange,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => FeatureFlagAccessPage(
+                tenantContext: tenantContext,
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Audit Log',
+        subtitle: 'Review write operations, actors, and entity changes.',
+        status: 'View Log',
+        icon: Icons.history,
+        color: Colors.brown,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SuperadminAuditPage(
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Plan Upgrade Requests',
+        subtitle: 'Approve or reject tenant plan upgrade requests.',
+        status: 'Review',
+        icon: Icons.upgrade,
+        color: Colors.purple,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => PlanUpgradeReviewPage(
+                tenantContext: tenantContext,
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Usage Analytics',
+        subtitle: 'Per-tenant usage metrics, MAU trends, and CSV export.',
+        status: 'View Analytics',
+        icon: Icons.analytics,
+        color: Colors.cyan,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => UsageAnalyticsPage(
+                tenantContext: tenantContext,
+                syncEngine: syncEngine,
+              ),
+            ),
+          );
+        },
+      ),
+      _ModuleSpec(
+        title: 'Tenant Details',
+        subtitle: 'Open a tenant detail view (single tenant management).',
+        status: 'Pick Tenant',
+        icon: Icons.business,
+        color: Colors.deepOrange,
+        onTap: () => _openTenantDetailPicker(context),
+      ),
+    ];
+
+    final cards = [
+      for (final m in modules)
+        _ModuleCard(
+          title: m.title,
+          subtitle: m.subtitle,
+          status: m.status,
+          icon: m.icon,
+          color: m.color,
+          onTap: m.onTap,
+        ),
+    ];
+
+    if (!isWide) {
+      return Column(children: cards);
+    }
+    return GridView.count(
+      crossAxisCount: 2,
+      childAspectRatio: 2.6,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      children: cards,
     );
   }
 
@@ -365,32 +441,117 @@ class SuperadminDashboardPage extends StatelessWidget {
   }
 }
 
+/// Spec for a dashboard module tile: visual identity + navigation.
+class _ModuleSpec {
+  const _ModuleSpec({
+    required this.title,
+    required this.subtitle,
+    required this.status,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String status;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+}
+
 class _ModuleCard extends StatelessWidget {
   const _ModuleCard({
     required this.title,
     required this.subtitle,
-    required this.trailing,
+    required this.status,
+    required this.icon,
+    required this.color,
     this.onTap,
   });
 
   final String title;
   final String subtitle;
-  final String trailing;
+  final String status;
+  final IconData icon;
+  final Color color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: Text(
-          trailing,
-          textAlign: TextAlign.right,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        status,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
