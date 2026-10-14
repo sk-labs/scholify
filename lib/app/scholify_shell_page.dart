@@ -755,9 +755,13 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
   /// falling back to the default Scholify icon and name.
   PreferredSizeWidget _buildBrandingAppBar({required bool compact}) {
     final logoBase64 = widget.tenantContext.brandingLogoBase64;
-    final displayName = widget.tenantContext.brandingDisplayName
-        ?? widget.tenantContext.tenantName
-        ?? 'Scholify';
+    // In superadmin mode the top-left brand is always the Scholify product
+    // identity, not the "Global Superadmin" context label.
+    final displayName = widget.tenantContext.isSuperAdmin
+        ? 'Scholify'
+        : (widget.tenantContext.brandingDisplayName ??
+            widget.tenantContext.tenantName ??
+            'Scholify');
 
     Widget leadingLogo;
     if (logoBase64 != null && logoBase64.isNotEmpty) {

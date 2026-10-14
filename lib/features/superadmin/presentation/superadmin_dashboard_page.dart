@@ -64,7 +64,7 @@ class _SuperadminDashboardPageState extends State<SuperadminDashboardPage> {
                 padding: const EdgeInsets.all(20),
                 children: [
                   // Page header: title + context
-                  _buildPageHeader(context, theme, activeTenant),
+                  _buildPageHeader(context, theme),
                   // License expiry alert banners (below header for hierarchy,
                   // dismissible per tier)
                   StreamBuilder<List<LicenseAlert>>(
@@ -121,53 +121,22 @@ class _SuperadminDashboardPageState extends State<SuperadminDashboardPage> {
   }
 
   /// Page header with title, subtitle, and tenant context chip.
-  Widget _buildPageHeader(
-      BuildContext context, ThemeData theme, String activeTenant) {
+  /// Page header: title + subtitle. No tenant chip — the top bar already
+  /// carries the product brand.
+  Widget _buildPageHeader(BuildContext context, ThemeData theme) {
     final scheme = theme.colorScheme;
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Platform Overview',
-                style: theme.textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Monitor tenants, licenses, and system health at a glance.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+        Text(
+          'Platform Overview',
+          style: theme.textTheme.headlineMedium,
         ),
-        Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: ScholifyColors.tint(scheme.primary, 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: ScholifyColors.tint(scheme.primary, 0.2),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.business,
-                  size: 16, color: scheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                activeTenant,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: scheme.primary,
-                ),
-              ),
-            ],
+        const SizedBox(height: 4),
+        Text(
+          'Monitor tenants, licenses, and system health at a glance.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
           ),
         ),
       ],
