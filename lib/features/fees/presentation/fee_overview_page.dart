@@ -63,8 +63,30 @@ class _FeeOverviewPageState extends State<FeeOverviewPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Fees (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: StreamBuilder<List<StudentDirectoryEntry>>(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Page header
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Fees',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Track invoices, payments, and balances.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: StreamBuilder<List<StudentDirectoryEntry>>(
           stream: _repository.watchStudents(),
           builder: (context, studentsSnapshot) {
             if (studentsSnapshot.connectionState == ConnectionState.waiting) {
@@ -232,6 +254,9 @@ class _FeeOverviewPageState extends State<FeeOverviewPage> {
             );
           },
         ),
+      ),
+    ],
+  ),
       ),
     );
   }
