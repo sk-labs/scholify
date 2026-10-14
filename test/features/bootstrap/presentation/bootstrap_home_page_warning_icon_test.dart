@@ -6,6 +6,7 @@ import 'package:scholify/core/database/local_database.dart';
 import 'package:scholify/core/remote/pocketbase_gateway.dart';
 import 'package:scholify/core/sync/sync_engine.dart';
 import 'package:scholify/core/tenant/tenant_context.dart';
+import 'package:scholify/core/theme/scholify_colors.dart';
 import 'package:scholify/features/bootstrap/presentation/bootstrap_home_page.dart';
 import 'package:scholify/features/sync/presentation/sync_failure_page.dart';
 
@@ -142,16 +143,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify icon is in app bar
-      final appBar = find.byType(AppBar);
-      expect(appBar, findsOneWidget);
+      // No page-level AppBar: the shell provides the top bar.
+      expect(find.byType(AppBar), findsNothing);
 
-      // Verify icon is a descendant of app bar
-      final iconInAppBar = find.descendant(
-        of: appBar,
-        matching: find.byIcon(Icons.warning_amber_rounded),
-      );
-      expect(iconInAppBar, findsOneWidget);
+      // Verify icon is present in the page header instead.
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
 
     testWidgets('badge has correct styling', (WidgetTester tester) async {
@@ -163,8 +159,8 @@ void main() {
       // Find the Badge widget
       final badge = tester.widget<Badge>(find.byType(Badge));
 
-      // Verify badge styling
-      expect(badge.backgroundColor, Colors.red);
+      // Verify badge styling (education palette error color)
+      expect(badge.backgroundColor, ScholifyColors.error);
       expect(badge.textColor, Colors.white);
     });
   });
