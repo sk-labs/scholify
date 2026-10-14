@@ -11,6 +11,7 @@ import '../core/services/seat_limit_enforcement_service.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/tenant/tenant_context.dart';
 import '../core/theme/theme_controller.dart';
+import '../core/theme/scholify_colors.dart';
 import '../features/impersonation/presentation/impersonation_banner.dart';
 import '../features/attendance/presentation/attendance_overview_page.dart';
 import '../features/bootstrap/presentation/bootstrap_home_page.dart';
@@ -778,15 +779,44 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       leadingLogo = const Icon(Icons.school);
     }
 
+    // Stylish Scholify wordmark: two-tone with tight tracking.
+    // Regular tenants keep their plain school name.
+    final Widget titleWidget;
+    if (widget.tenantContext.isSuperAdmin) {
+      titleWidget = RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+            height: 1.0,
+          ),
+          children: [
+            const TextSpan(
+              text: 'Scholi',
+              style: TextStyle(color: Colors.white),
+            ),
+            TextSpan(
+              text: 'fy',
+              style:
+                  TextStyle(color: ScholifyColors.achievementAmber),
+            ),
+          ],
+        ),
+      );
+    } else {
+      titleWidget = Text(
+        displayName,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      );
+    }
+
     return AppBar(
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: leadingLogo,
       ),
-      title: Text(
-        displayName,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
+      title: titleWidget,
       centerTitle: false,
       actions: [
         // Dark mode toggle
