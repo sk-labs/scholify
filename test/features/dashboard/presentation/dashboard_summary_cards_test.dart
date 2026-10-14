@@ -95,7 +95,7 @@ void main() {
       expect(find.text('Total Tenants'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('At Risk'), findsOneWidget);
-      expect(find.text('Expiring Soon (≤30d)'), findsOneWidget);
+      expect(find.text('Expiring Soon'), findsOneWidget);
       expect(find.text('0'), findsNWidgets(4));
 
       // Dispose the StreamBuilder, then advance the fake clock so drift's
@@ -142,7 +142,7 @@ void main() {
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
       expect(find.text('At Risk'), findsOneWidget);
-      expect(find.text('Expiring Soon (≤30d)'), findsOneWidget);
+      expect(find.text('Expiring Soon'), findsOneWidget);
       // At-risk and expiring-soon are both 1 (tenant_a)
       expect(find.text('1'), findsNWidgets(2));
 

@@ -20,7 +20,7 @@ import 'superadmin_audit_page.dart';
 import 'tenant_licensing_page.dart';
 import 'usage_billing_monitor_page.dart';
 
-class SuperadminDashboardPage extends StatelessWidget {
+class SuperadminDashboardPage extends StatefulWidget {
   const SuperadminDashboardPage({
     super.key,
     required this.tenantContext,
@@ -33,6 +33,19 @@ class SuperadminDashboardPage extends StatelessWidget {
   final LicenseAlertService licenseAlertService;
 
   @override
+  State<SuperadminDashboardPage> createState() =>
+      _SuperadminDashboardPageState();
+}
+
+class _SuperadminDashboardPageState extends State<SuperadminDashboardPage> {
+  /// Tiers the user has dismissed this session.
+  final Set<AlertTier> _dismissedTiers = {};
+
+  TenantContext get tenantContext => widget.tenantContext;
+  SyncEngine get syncEngine => widget.syncEngine;
+  LicenseAlertService get licenseAlertService => widget.licenseAlertService;
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([tenantContext, syncEngine]),
@@ -43,65 +56,63 @@ class SuperadminDashboardPage extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(title: const Text('Superadmin Dashboard')),
-          body: Column(
-            children: [
-              // License expiry alert banners
-              StreamBuilder<List<LicenseAlert>>(
-                stream: licenseAlertService.watchAlerts(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final alerts = snapshot.data!;
-                  return _buildAlertBanners(context, alerts);
-                },
-              ),
-              // Main dashboard content
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth > 800;
-                    return ListView(
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        // Page header: title + context
-                        _buildPageHeader(context, theme, activeTenant),
-                        const SizedBox(height: 20),
-                        // Q4: Dashboard summary metric cards (tap navigates to licensing)
-                        DashboardSummaryCards(
-                          syncEngine: syncEngine,
-                          onCardTap: (type) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => TenantLicensingPage(
-                                  tenantContext: tenantContext,
-                                  syncEngine: syncEngine,
-                                  initialActiveFilter:
-                                      type == DashboardMetricType.active
-                                          ? true
-                                          : null,
-                                ),
-                              ),
-                            );
-                          },
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 800;
+              return ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  // Page header: title + context
+                  _buildPageHeader(context, theme, activeTenant),
+                  // License expiry alert banners (below header for hierarchy,
+                  // dismissible per tier)
+                  StreamBuilder<List<LicenseAlert>>(
+                    stream: licenseAlertService.watchAlerts(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _buildAlertBanners(context, snapshot.data!),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  // Q4: Dashboard summary metric cards (tap navigates to licensing)
+                  DashboardSummaryCards(
+                    syncEngine: syncEngine,
+                    onCardTap: (type) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => TenantLicensingPage(
+                            tenantContext: tenantContext,
+                            syncEngine: syncEngine,
+                            initialActiveFilter:
+                                type == DashboardMetricType.active
+                                    ? true
+                                    : null,
+                          ),
                         ),
-                        const SizedBox(height: 28),
-                        _buildSectionHeader(
-                          context,
-                          theme,
-                          'Management',
-                          'Tools to run the platform',
-                        ),
-                        const SizedBox(height: 12),
-                        _buildModuleGrid(
-                            context, isWide, superadminMode, activeTenant),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  // System status strip
+                  _buildSystemStatus(context, theme),
+                  const SizedBox(height: 28),
+                  _buildSectionHeader(
+                    context,
+                    theme,
+                    'Management',
+                    'Tools to run the platform',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildModuleGrid(
+                      context, isWide, superadminMode, activeTenant),
+                ],
+              );
+            },
           ),
         );
       },
@@ -180,6 +191,104 @@ class SuperadminDashboardPage extends StatelessWidget {
     );
   }
 
+  /// System status strip: sync engine, pending jobs, and database state.
+  /// Gives the dashboard a "live ops" feel.
+  Widget _buildSystemStatus(BuildContext context, ThemeData theme) {
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final pending = syncEngine.pendingJobs;
+
+    final items = [
+      _StatusItem(
+        icon: Icons.sync,
+        label: 'Sync Engine',
+        value: 'Running',
+        color: ScholifyColors.scholarTeal,
+      ),
+      _StatusItem(
+        icon: Icons.pending_actions,
+        label: 'Pending Jobs',
+        value: '$pending',
+        color: pending > 0
+            ? ScholifyColors.achievementAmber
+            : ScholifyColors.success,
+      ),
+      _StatusItem(
+        icon: Icons.storage,
+        label: 'Local Database',
+        value: 'Connected',
+        color: ScholifyColors.success,
+      ),
+    ];
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: Row(
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              Expanded(child: _buildStatusCell(context, theme, items[i])),
+              if (i < items.length - 1)
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCell(
+      BuildContext context, ThemeData theme, _StatusItem item) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: ScholifyColors.tint(item.color, 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(item.icon, size: 20, color: item.color),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              item.label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              item.value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   /// Builds the module navigation grid: 2 columns on wide screens,
   /// single column list on narrow screens.
   Widget _buildModuleGrid(
@@ -195,6 +304,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: superadminMode ? 'Create Tenant' : 'Restricted',
         icon: Icons.person_add,
         color: ScholifyColors.academicNavy,
+        category: 'Tenant Management',
         onTap: () {
           final auditLogService = AuditLogService(
             database: syncEngine.database,
@@ -219,6 +329,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: superadminMode ? 'Active' : 'Restricted',
         icon: Icons.badge,
         color: ScholifyColors.accentStudents,
+        category: 'Tenant Management',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -236,6 +347,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: activeTenant,
         icon: Icons.manage_accounts,
         color: ScholifyColors.scholarTeal,
+        category: 'Tenant Management',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -253,6 +365,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: 'Pending sync jobs: ${syncEngine.pendingJobs}',
         icon: Icons.receipt_long,
         color: ScholifyColors.success,
+        category: 'Billing & Plans',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -270,6 +383,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: 'Configure Access',
         icon: Icons.tune,
         color: ScholifyColors.achievementAmber,
+        category: 'Billing & Plans',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -287,6 +401,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: 'View Log',
         icon: Icons.history,
         color: ScholifyColors.slate600,
+        category: 'System',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -303,6 +418,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: 'Review',
         icon: Icons.upgrade,
         color: ScholifyColors.accentOperations,
+        category: 'Billing & Plans',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -320,6 +436,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: 'View Analytics',
         icon: Icons.analytics,
         color: ScholifyColors.tealSoft,
+        category: 'Billing & Plans',
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -337,40 +454,72 @@ class SuperadminDashboardPage extends StatelessWidget {
         status: 'Pick Tenant',
         icon: Icons.business,
         color: ScholifyColors.accentComms,
+        category: 'Tenant Management',
         onTap: () => _openTenantDetailPicker(context),
       ),
     ];
 
-    final cards = [
-      for (final m in modules)
-        _ModuleCard(
-          title: m.title,
-          subtitle: m.subtitle,
-          status: m.status,
-          icon: m.icon,
-          color: m.color,
-          onTap: m.onTap,
-        ),
-    ];
+    // Group modules by category for a structured layout.
+    const order = ['Tenant Management', 'Billing & Plans', 'System'];
+    final grouped = <String, List<_ModuleSpec>>{};
+    for (final m in modules) {
+      grouped.putIfAbsent(m.category, () => []).add(m);
+    }
 
-    if (!isWide) {
-      return Column(
-        children: [
-          for (var i = 0; i < cards.length; i++) ...[
-            cards[i],
-            if (i < cards.length - 1) const SizedBox(height: 12),
+    Widget buildCards(List<_ModuleSpec> specs) {
+      final cards = [
+        for (final m in specs)
+          _ModuleCard(
+            title: m.title,
+            subtitle: m.subtitle,
+            status: m.status,
+            icon: m.icon,
+            color: m.color,
+            onTap: m.onTap,
+          ),
+      ];
+      if (!isWide) {
+        return Column(
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              cards[i],
+              if (i < cards.length - 1) const SizedBox(height: 12),
+            ],
           ],
-        ],
+        );
+      }
+      return GridView.count(
+        crossAxisCount: 2,
+        childAspectRatio: 2.4,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        children: cards,
       );
     }
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 2.4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 14,
-      crossAxisSpacing: 14,
-      children: cards,
+
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final category in order)
+          if (grouped.containsKey(category)) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 10),
+              child: Text(
+                category.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            buildCards(grouped[category]!),
+            const SizedBox(height: 20),
+          ],
+      ],
     );
   }
 
@@ -429,11 +578,27 @@ class SuperadminDashboardPage extends StatelessWidget {
   /// Requirements: H4.3, H4.4, H4.5
   Widget _buildAlertBanners(BuildContext context, List<LicenseAlert> alerts) {
     final dateFormat = DateFormat('dd MMM yyyy');
-    
-    // Group alerts by tier
-    final expired = alerts.where((a) => a.tier == AlertTier.expired).toList();
-    final urgent7 = alerts.where((a) => a.tier == AlertTier.urgent7).toList();
-    final alert14 = alerts.where((a) => a.tier == AlertTier.alert14).toList();
+
+    // Group alerts by tier, excluding dismissed ones
+    final expired = alerts
+        .where((a) =>
+            a.tier == AlertTier.expired &&
+            !_dismissedTiers.contains(AlertTier.expired))
+        .toList();
+    final urgent7 = alerts
+        .where((a) =>
+            a.tier == AlertTier.urgent7 &&
+            !_dismissedTiers.contains(AlertTier.urgent7))
+        .toList();
+    final alert14 = alerts
+        .where((a) =>
+            a.tier == AlertTier.alert14 &&
+            !_dismissedTiers.contains(AlertTier.alert14))
+        .toList();
+
+    if (expired.isEmpty && urgent7.isEmpty && alert14.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       children: [
@@ -441,31 +606,34 @@ class SuperadminDashboardPage extends StatelessWidget {
         if (expired.isNotEmpty)
           _buildBanner(
             context: context,
-            color: Colors.red.shade700,
+            color: ScholifyColors.error,
             icon: Icons.error,
             title: 'Expired Licenses (${expired.length})',
             alerts: expired,
             dateFormat: dateFormat,
+            tier: AlertTier.expired,
           ),
         // Red urgent banner for 7-day alerts (H4.4)
         if (urgent7.isNotEmpty)
           _buildBanner(
             context: context,
-            color: Colors.red.shade700,
+            color: ScholifyColors.error,
             icon: Icons.warning,
-            title: 'Urgent: Expiring in 7 Days or Less (${urgent7.length})',
+            title: 'Expiring within 7 days (${urgent7.length})',
             alerts: urgent7,
             dateFormat: dateFormat,
+            tier: AlertTier.urgent7,
           ),
         // Amber alert banner for 14-day alerts (H4.3)
         if (alert14.isNotEmpty)
           _buildBanner(
             context: context,
-            color: Colors.orange.shade700,
+            color: ScholifyColors.achievementAmber,
             icon: Icons.warning_amber,
-            title: 'Alert: Expiring in 14 Days or Less (${alert14.length})',
+            title: 'Expiring within 14 days (${alert14.length})',
             alerts: alert14,
             dateFormat: dateFormat,
+            tier: AlertTier.alert14,
           ),
       ],
     );
@@ -478,6 +646,7 @@ class SuperadminDashboardPage extends StatelessWidget {
     required String title,
     required List<LicenseAlert> alerts,
     required DateFormat dateFormat,
+    required AlertTier tier,
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -544,6 +713,15 @@ class SuperadminDashboardPage extends StatelessWidget {
                 icon: const Icon(Icons.autorenew, size: 18),
                 label: const Text('Renew'),
               ),
+              const SizedBox(width: 4),
+              // Dismiss for this session
+              IconButton(
+                tooltip: 'Dismiss',
+                onPressed: () =>
+                    setState(() => _dismissedTiers.add(tier)),
+                icon: const Icon(Icons.close,
+                    size: 20, color: Colors.white70),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -599,6 +777,7 @@ class _ModuleSpec {
     required this.status,
     required this.icon,
     required this.color,
+    required this.category,
     required this.onTap,
   });
 
@@ -607,7 +786,23 @@ class _ModuleSpec {
   final String status;
   final IconData icon;
   final Color color;
+  final String category;
   final VoidCallback onTap;
+}
+
+/// A single system status cell (icon + label + value).
+class _StatusItem {
+  const _StatusItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
 }
 
 class _ModuleCard extends StatelessWidget {

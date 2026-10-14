@@ -148,7 +148,7 @@ class DashboardSummaryCards extends StatelessWidget {
               progress: metrics.totalTenants == 0
                   ? 0
                   : metrics.activeTenants / metrics.totalTenants,
-              progressLabel: 'license health',
+              progressLabel: 'of total',
               onTap: tap == null ? null : () => tap(DashboardMetricType.active),
             ),
 
@@ -170,7 +170,7 @@ class DashboardSummaryCards extends StatelessWidget {
 
             // Q4.1, Q4.6: Expiring Soon card
             _SummaryCard(
-              title: 'Expiring Soon (≤30d)',
+              title: 'Expiring Soon',
               value: metrics.expiringSoonTenants.toString(),
               subtitle: metrics.expiringSoonTenants == 0
                   ? 'no renewals due'
@@ -326,29 +326,39 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          // Body: value + subtitle + progress
+          // Body: value + subtitle + progress (compact, no dead space)
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    value,
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      color: isDark ? Colors.white : color,
-                      fontWeight: FontWeight.w800,
-                      height: 1.0,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        value,
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          color: isDark ? Colors.white : color,
+                          fontWeight: FontWeight.w800,
+                          height: 1.0,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const Spacer(),
                   Row(
                     children: [
                       Expanded(
