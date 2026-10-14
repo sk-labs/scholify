@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/attendance_repository.dart';
 
 class AttendanceOverviewPage extends StatefulWidget {
@@ -50,10 +52,15 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
     final monthLabel = DateFormat('MMMM yyyy').format(_selectedMonth);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Attendance (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: StreamBuilder<List<StudentDirectoryEntry>>(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildPageHeader(context),
+            const SizedBox(height: 16),
+            Expanded(
+              child: StreamBuilder<List<StudentDirectoryEntry>>(
           stream: _repository.watchStudents(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -68,10 +75,12 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
 
             final students = snapshot.data ?? const <StudentDirectoryEntry>[];
             if (students.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No students found. Add students in the Students tab or sync from server.',
-                ),
+              return const ScholifyEmptyState(
+                icon: Icons.people_outline,
+                title: 'No students yet',
+                message:
+                    'Add students in the Students tab or sync from server.',
+                accent: ScholifyColors.accentStudents,
               );
             }
 
@@ -104,8 +113,12 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
 
                       final records = snapshot.data ?? const [];
                       if (records.isEmpty) {
-                        return const Center(
-                          child: Text('No attendance records for this month.'),
+                        return const ScholifyEmptyState(
+                          icon: Icons.event_busy,
+                          title: 'No records this month',
+                          message:
+                              'No attendance records for this month yet.',
+                          accent: ScholifyColors.scholarTeal,
                         );
                       }
 
@@ -117,9 +130,26 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
                           final dateText = DateFormat(
                             'dd MMM yyyy',
                           ).format(row.attendanceDate.toLocal());
+                          final statusStyle = _statusStyle(row.status);
 
                           return Card(
+                            shape: _cardShape(context),
                             child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: ScholifyColors.tint(
+                                    statusStyle.$1,
+                                    0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  statusStyle.$2,
+                                  color: statusStyle.$1,
+                                ),
+                              ),
                               title: Text(dateText),
                               subtitle: Text(
                                 'Status: ${row.status.toUpperCase()} | Source: ${row.source}',
@@ -139,9 +169,57 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
               ],
             );
           },
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildPageHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Attendance', style: theme.textTheme.headlineMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Track daily attendance and view reports.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  ShapeBorder _cardShape(BuildContext context) {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(
+        color: Theme.of(context).colorScheme.outlineVariant.withValues(
+          alpha: 0.6,
+        ),
+      ),
+    );
+  }
+
+  /// Tint + icon used for an attendance status medallion.
+  (Color, IconData) _statusStyle(String status) {
+    switch (status) {
+      case 'present':
+        return (ScholifyColors.scholarTeal, Icons.check);
+      case 'absent':
+        return (ScholifyColors.error, Icons.close);
+      case 'late':
+        return (ScholifyColors.achievementAmber, Icons.watch_later_outlined);
+      case 'half_day':
+        return (ScholifyColors.info, Icons.timelapse);
+      default:
+        return (ScholifyColors.slate400, Icons.help_outline);
+    }
   }
 
   Widget _buildToolbar(
@@ -221,6 +299,8 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
 
   Widget _buildMarkCard(String selectedStudentId) {
     return Card(
+      shape: _cardShape(context),
+      color: ScholifyColors.tint(ScholifyColors.scholarTeal, 0.08),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Wrap(
@@ -228,9 +308,9 @@ class _AttendanceOverviewPageState extends State<AttendanceOverviewPage> {
           runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Text(
+            Text(
               'Mark Today:',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleSmall,
             ),
             SizedBox(
               width: 180,

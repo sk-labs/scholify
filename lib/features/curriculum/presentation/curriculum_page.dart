@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/curriculum_repository.dart';
 
 class CurriculumPage extends StatefulWidget {
@@ -57,11 +59,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Curriculum Management')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            _buildPageHeader(context),
+            const SizedBox(height: 16),
             _buildTypeSelector(),
             const SizedBox(height: 12),
             _buildAnalyticsBanner(),
@@ -72,6 +75,52 @@ class _CurriculumPageState extends State<CurriculumPage> {
           ],
         ),
       ),
+    );
+  }
+
+  /// In-page header (the shell already provides the top AppBar).
+  Widget _buildPageHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Curriculum Management',
+          style: theme.textTheme.headlineMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Plan lessons, structure subjects, and track syllabus progress.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Shared card shape: 16px radius with a subtle outline border.
+  ShapeBorder _cardShape(BuildContext context) {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(
+        color:
+            Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+      ),
+    );
+  }
+
+  /// Tinted icon medallion in a palette color.
+  Widget _buildIconMedallion(IconData icon, Color color) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: ScholifyColors.tint(color, 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 22),
     );
   }
 
@@ -98,19 +147,23 @@ class _CurriculumPageState extends State<CurriculumPage> {
   }
 
   Widget _buildComposerCard() {
+    final theme = Theme.of(context);
     final metaOneLabel = _metaOneLabel();
     final metaTwoLabel = _metaTwoLabel();
     final metaThreeLabel = _metaThreeLabel();
 
     return Card(
+      shape: _cardShape(context),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Add ${_labelForType(_selectedType)}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -260,7 +313,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     final rows = snapshot.data ?? const <LessonEntry>[];
     if (rows.isEmpty) {
-      return const Center(child: Text('No lessons available.'));
+      return const ScholifyEmptyState(
+        icon: Icons.menu_book_outlined,
+        title: 'No lessons yet',
+        message: 'Add your first lesson above to start building the curriculum.',
+        accent: ScholifyColors.academicNavy,
+      );
     }
 
     return ListView.separated(
@@ -297,7 +355,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     final rows = snapshot.data ?? const <LessonPlanEntry>[];
     if (rows.isEmpty) {
-      return const Center(child: Text('No lesson plans available.'));
+      return const ScholifyEmptyState(
+        icon: Icons.event_note_outlined,
+        title: 'No lesson plans yet',
+        message: 'Create a lesson plan above or start from a template.',
+        accent: ScholifyColors.academicNavy,
+      );
     }
 
     return ListView.separated(
@@ -326,7 +389,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     final rows = snapshot.data ?? const <SubjectEntry>[];
     if (rows.isEmpty) {
-      return const Center(child: Text('No subjects available.'));
+      return const ScholifyEmptyState(
+        icon: Icons.library_books_outlined,
+        title: 'No subjects yet',
+        message: 'Add subjects above to organize classes and teachers.',
+        accent: ScholifyColors.academicNavy,
+      );
     }
 
     return ListView.separated(
@@ -357,7 +425,12 @@ class _CurriculumPageState extends State<CurriculumPage> {
 
     final rows = snapshot.data ?? const <SyllabusEntry>[];
     if (rows.isEmpty) {
-      return const Center(child: Text('No syllabus items available.'));
+      return const ScholifyEmptyState(
+        icon: Icons.checklist_outlined,
+        title: 'No syllabus items yet',
+        message: 'Add syllabus items above and track their completion here.',
+        accent: ScholifyColors.scholarTeal,
+      );
     }
 
     return ListView.separated(
@@ -383,6 +456,7 @@ class _CurriculumPageState extends State<CurriculumPage> {
     Widget? leadingAction,
   }) {
     return Card(
+      shape: _cardShape(context),
       child: ListTile(
         leading: leadingAction,
         title: Text(title),
@@ -492,18 +566,38 @@ class _CurriculumPageState extends State<CurriculumPage> {
         }
 
         return Card(
-          color: Colors.blueGrey.shade50,
+          shape: _cardShape(context),
+          color: ScholifyColors.tint(ScholifyColors.scholarTeal, 0.08),
           child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 8,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Syllabus Items: ${analytics.totalItems}'),
-                Text('Completed: ${analytics.completedItems}'),
-                Text('In Progress: ${analytics.inProgressItems}'),
-                Text(
-                  'Avg Completion: ${analytics.averageCompletionPercent.toStringAsFixed(1)}%',
+                Row(
+                  children: [
+                    _buildIconMedallion(
+                      Icons.track_changes_outlined,
+                      ScholifyColors.scholarTeal,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Syllabus Progress',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
+                    Text('Syllabus Items: ${analytics.totalItems}'),
+                    Text('Completed: ${analytics.completedItems}'),
+                    Text('In Progress: ${analytics.inProgressItems}'),
+                    Text(
+                      'Avg Completion: ${analytics.averageCompletionPercent.toStringAsFixed(1)}%',
+                    ),
+                  ],
                 ),
               ],
             ),
