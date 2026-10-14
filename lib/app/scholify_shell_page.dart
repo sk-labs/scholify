@@ -182,6 +182,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       _ShellDestination(
         label: 'Foundation',
         icon: Icons.dashboard_customize,
+        color: ScholifyColors.academicNavy,
         page: BootstrapHomePage(
           tenantContext: widget.tenantContext,
           syncEngine: widget.syncEngine,
@@ -193,6 +194,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Superadmin',
           icon: Icons.admin_panel_settings,
+        color: ScholifyColors.accentAdmin,
           page: SuperadminDashboardPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -206,6 +208,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Students',
           icon: Icons.groups,
+        color: ScholifyColors.accentStudents,
           page: StudentDirectoryPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -216,6 +219,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Guardians',
           icon: Icons.family_restroom,
+        color: ScholifyColors.info,
           page: StudentGuardiansPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -226,6 +230,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Enrollment',
           icon: Icons.assignment_ind,
+        color: ScholifyColors.achievementAmber,
           page: StudentEnrollmentPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -239,6 +244,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Class Roll',
           icon: Icons.format_list_numbered,
+        color: ScholifyColors.accentAcademics,
           page: StudentClassRollPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -249,6 +255,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Leave',
           icon: Icons.event_busy,
+        color: ScholifyColors.warning,
           page: LeaveRequestsPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -259,6 +266,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Tasks',
           icon: Icons.checklist,
+        color: ScholifyColors.accentOperations,
           page: PendingTasksPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -269,6 +277,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Hostel',
           icon: Icons.bed,
+        color: ScholifyColors.academicNavy,
           page: HostelPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -279,6 +288,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Fees',
           icon: Icons.receipt_long,
+        color: ScholifyColors.accentFinance,
           page: FeeOverviewPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -289,6 +299,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Attendance',
           icon: Icons.fact_check,
+        color: ScholifyColors.success,
           page: AttendanceOverviewPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -299,6 +310,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Exams',
           icon: Icons.quiz,
+        color: ScholifyColors.academicNavy,
           page: ExamOverviewPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -309,6 +321,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Notices',
           icon: Icons.campaign,
+        color: ScholifyColors.achievementAmber,
           page: NoticeBoardPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -319,6 +332,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Timetable',
           icon: Icons.view_week,
+        color: ScholifyColors.scholarTeal,
           page: TimetableOverviewPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -329,6 +343,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Transport',
           icon: Icons.directions_bus,
+        color: ScholifyColors.info,
           page: TransportRoutesPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -339,6 +354,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Homework',
           icon: Icons.assignment,
+        color: ScholifyColors.achievementAmber,
           page: HomeworkAssignmentsPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -349,6 +365,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Online Learning',
           icon: Icons.play_lesson,
+        color: ScholifyColors.accentComms,
           page: OnlineLearningPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -359,6 +376,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Curriculum',
           icon: Icons.menu_book,
+        color: ScholifyColors.academicNavy,
           page: CurriculumPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -369,6 +387,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Library',
           icon: Icons.local_library,
+        color: ScholifyColors.amberSoft,
           page: LibraryPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -379,6 +398,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Documents',
           icon: Icons.folder_copy_outlined,
+        color: ScholifyColors.slate600,
           page: DocumentCenterPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -389,6 +409,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Visitors',
           icon: Icons.badge_outlined,
+        color: ScholifyColors.accentComms,
           page: VisitorCommunicationPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -399,6 +420,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Notifications',
           icon: Icons.notifications_active_outlined,
+        color: ScholifyColors.error,
           page: NotificationCenterPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -409,6 +431,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Live Classes',
           icon: Icons.videocam_outlined,
+        color: ScholifyColors.error,
           page: LiveClassesPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -419,6 +442,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Teachers',
           icon: Icons.people_outline,
+        color: ScholifyColors.accentAcademics,
           page: TeachersPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -429,6 +453,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _ShellDestination(
           label: 'Behaviour',
           icon: Icons.psychology_outlined,
+        color: ScholifyColors.accentOperations,
           page: StudentBehaviourPage(
             tenantContext: widget.tenantContext,
             syncEngine: widget.syncEngine,
@@ -709,16 +734,16 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: selected
-                        ? scheme.primary
-                        : scheme.primary.withValues(alpha: 0.08),
+                        ? destination.color
+                        : destination.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     destination.icon,
                     size: 20,
                     color: selected
-                        ? scheme.onPrimary
-                        : scheme.primary,
+                        ? Colors.white
+                        : destination.color,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -727,7 +752,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     destination.label,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: selected
-                          ? scheme.primary
+                          ? destination.color
                           : scheme.onSurface,
                       fontWeight:
                           selected ? FontWeight.w700 : FontWeight.w500,
@@ -739,7 +764,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     width: 4,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: scheme.primary,
+                      color: destination.color,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -842,12 +867,14 @@ class _ShellDestination {
     required this.icon,
     required this.page,
     required this.section,
+    required this.color,
   });
 
   final String label;
   final IconData icon;
   final Widget page;
   final _ShellSection section;
+  final Color color;
 }
 
 /// Sidebar sections for grouping the 25 navigation destinations.
