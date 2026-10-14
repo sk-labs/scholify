@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/timetable_repository.dart';
 
 class TimetableOverviewPage extends StatefulWidget {
@@ -55,11 +57,13 @@ class _TimetableOverviewPageState extends State<TimetableOverviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Class Timetable (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildPageHeader(context),
+            const SizedBox(height: 16),
             _buildDaySelector(),
             const SizedBox(height: 12),
             _buildComposerCard(),
@@ -82,8 +86,12 @@ class _TimetableOverviewPageState extends State<TimetableOverviewPage> {
 
                   final rows = snapshot.data ?? const <TimetableSlotEntry>[];
                   if (rows.isEmpty) {
-                    return Center(
-                      child: Text('No periods scheduled for $_selectedDay.'),
+                    return ScholifyEmptyState(
+                      icon: Icons.event_busy,
+                      title: 'No periods scheduled',
+                      message:
+                          'No periods scheduled for $_selectedDay yet. Add one above.',
+                      accent: ScholifyColors.scholarTeal,
                     );
                   }
 
@@ -95,9 +103,28 @@ class _TimetableOverviewPageState extends State<TimetableOverviewPage> {
                       final timeText = _formatTimeRange(row);
 
                       return Card(
+                        shape: _cardShape(context),
                         child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text('${row.periodIndex}'),
+                          leading: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: ScholifyColors.tint(
+                                ScholifyColors.academicNavy,
+                                0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${row.periodIndex}',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: ScholifyColors.academicNavy,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ),
                           ),
                           title: Text(row.subjectName),
                           subtitle: Text(
@@ -119,6 +146,35 @@ class _TimetableOverviewPageState extends State<TimetableOverviewPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Class Timetable', style: theme.textTheme.headlineMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Plan weekly periods by day and subject.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  ShapeBorder _cardShape(BuildContext context) {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(
+        color: Theme.of(context).colorScheme.outlineVariant.withValues(
+          alpha: 0.6,
         ),
       ),
     );
@@ -153,14 +209,16 @@ class _TimetableOverviewPageState extends State<TimetableOverviewPage> {
 
   Widget _buildComposerCard() {
     return Card(
+      shape: _cardShape(context),
+      color: ScholifyColors.tint(ScholifyColors.academicNavy, 0.06),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Add Period Slot',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 10),
             TextField(
