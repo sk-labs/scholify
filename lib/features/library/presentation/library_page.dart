@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/library_repository.dart';
 
 class LibraryPage extends StatefulWidget {
@@ -52,12 +54,29 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final cardShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+    );
+
+    // No page-level AppBar: the shell provides the top bar.
     return Scaffold(
-      appBar: AppBar(title: const Text('Library')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Library', style: theme.textTheme.headlineMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Manage books, issue and return records.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -80,6 +99,7 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
             const SizedBox(height: 12),
             Card(
+              shape: cardShape,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -168,18 +188,38 @@ class _LibraryPageState extends State<LibraryPage> {
 
                   final books = snapshot.data ?? const <LibraryBookEntry>[];
                   if (books.isEmpty) {
-                    return Center(
-                      child: Text('No ${_labelForType(_selectedType)} books.'),
+                    return ScholifyEmptyState(
+                      icon: Icons.menu_book_outlined,
+                      title: 'No ${_labelForType(_selectedType)} books',
+                      message:
+                          'Add your first ${_labelForType(_selectedType).toLowerCase()} book with the form above.',
+                      accent: ScholifyColors.scholarTeal,
                     );
                   }
 
                   return ListView.separated(
                     itemCount: books.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final row = books[index];
                       return Card(
+                        shape: cardShape,
                         child: ListTile(
+                          leading: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: ScholifyColors.tint(
+                                ScholifyColors.scholarTeal,
+                                0.12,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.menu_book_outlined,
+                              color: ScholifyColors.scholarTeal,
+                            ),
+                          ),
                           title: Text(row.title),
                           subtitle: Text(
                             '${row.authorName ?? 'Author TBD'} | ${row.categoryName ?? 'Category TBD'}\nRating ${row.ratingScore.toStringAsFixed(1)} | Issues ${row.issueCount}',

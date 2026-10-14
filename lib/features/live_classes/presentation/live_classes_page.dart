@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/live_class_repository.dart';
 
 class LiveClassesPage extends StatefulWidget {
@@ -53,37 +55,55 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
+    // No page-level AppBar: the shell provides the top bar.
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Live Classes'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Zoom'),
-              Tab(text: 'Gmeet'),
-            ],
-          ),
-        ),
         body: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildComposerCard(),
+              Text('Live Classes', style: theme.textTheme.headlineMedium),
+              const SizedBox(height: 4),
+              Text(
+                'Schedule and join live Zoom and Google Meet classes.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TabBar(
+                labelColor: scheme.primary,
+                unselectedLabelColor: scheme.onSurfaceVariant,
+                indicatorColor: scheme.secondary,
+                tabs: const [
+                  Tab(text: 'Zoom'),
+                  Tab(text: 'Gmeet'),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildComposerCard(theme, scheme),
               const SizedBox(height: 12),
               Expanded(
                 child: TabBarView(
                   children: [
                     _buildList(
                       stream: _repository.watchZoomClasses(),
-                      emptyText: 'No Zoom classes yet.',
+                      emptyTitle: 'No Zoom classes yet',
+                      emptyMessage:
+                          'Schedule your first Zoom class with the form above.',
                       dateFormat: dateFormat,
                     ),
                     _buildList(
                       stream: _repository.watchGmeetClasses(),
-                      emptyText: 'No Gmeet classes yet.',
+                      emptyTitle: 'No Gmeet classes yet',
+                      emptyMessage:
+                          'Schedule your first Gmeet class with the form above.',
                       dateFormat: dateFormat,
                     ),
                   ],
@@ -96,16 +116,22 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
     );
   }
 
-  Widget _buildComposerCard() {
+  Widget _buildComposerCard(ThemeData theme, ColorScheme scheme) {
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Schedule Live Class',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -198,12 +224,14 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
 
   Widget _buildList({
     required Stream<List<LiveClassEntry>> stream,
-    required String emptyText,
+    required String emptyTitle,
+    required String emptyMessage,
     required DateFormat dateFormat,
   }) {
     return StreamBuilder<List<LiveClassEntry>>(
       stream: stream,
       builder: (context, snapshot) {
+        final scheme = Theme.of(context).colorScheme;
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -216,12 +244,17 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
 
         final rows = snapshot.data ?? const <LiveClassEntry>[];
         if (rows.isEmpty) {
-          return Center(child: Text(emptyText));
+          return ScholifyEmptyState(
+            icon: Icons.videocam_outlined,
+            title: emptyTitle,
+            message: emptyMessage,
+            accent: ScholifyColors.scholarTeal,
+          );
         }
 
         return ListView.separated(
           itemCount: rows.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final item = rows[index];
             final startText = item.startAt == null
@@ -229,7 +262,28 @@ class _LiveClassesPageState extends State<LiveClassesPage> {
                 : dateFormat.format(item.startAt!.toLocal());
 
             return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.6),
+                ),
+              ),
               child: ListTile(
+                leading: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: ScholifyColors.tint(
+                      ScholifyColors.scholarTeal,
+                      0.12,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.videocam_outlined,
+                    color: ScholifyColors.scholarTeal,
+                  ),
+                ),
                 title: Text(item.title),
                 subtitle: Text(
                   'Provider: ${item.providerType.toUpperCase()} | Host: ${item.hostName ?? 'N/A'} | Section: ${item.classSection ?? 'N/A'}\nStart: $startText | Status: ${item.statusLabel}',
