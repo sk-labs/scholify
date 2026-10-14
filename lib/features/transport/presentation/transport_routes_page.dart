@@ -67,10 +67,28 @@ class _TransportRoutesPageState extends State<TransportRoutesPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Transport Routes (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildComposerCard(),
+                        // Page header
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Transport Routes',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Manage bus routes, vehicles, and drivers.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+_buildComposerCard(),
             const SizedBox(height: 12),
             Expanded(
               child: StreamBuilder<List<TransportRouteEntry>>(

@@ -69,10 +69,28 @@ class _VisitorCommunicationPageState extends State<VisitorCommunicationPage> {
           ),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _buildComposerCard(),
+                          // Page header
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Visitors',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Log visitors and manage school communications.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+_buildComposerCard(),
               const SizedBox(height: 12),
               Expanded(
                 child: TabBarView(
