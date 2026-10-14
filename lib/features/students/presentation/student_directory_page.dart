@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/student_repository.dart';
 
 class StudentDirectoryPage extends StatefulWidget {
@@ -76,10 +77,11 @@ class _StudentDirectoryPageState extends State<StudentDirectoryPage> {
                   final students =
                       snapshot.data ?? const <StudentDirectoryEntry>[];
                   if (students.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No students yet. Create one and it will sync when online.',
-                      ),
+                    return const ScholifyEmptyState(
+                      icon: Icons.groups_outlined,
+                      title: 'No students yet',
+                      message:
+                          'Add your first student and they will sync when you are back online.',
                     );
                   }
 

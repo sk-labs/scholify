@@ -399,7 +399,11 @@ class SuperadminDashboardPage extends StatelessWidget {
   }) {
     return Container(
       width: double.infinity,
-      color: color,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,13 +412,35 @@ class SuperadminDashboardPage extends StatelessWidget {
             children: [
               Icon(icon, color: Colors.white, size: 20),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: Colors.white),
                 ),
+              ),
+              // Inline action: jump straight to licensing to renew.
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => TenantLicensingPage(
+                        tenantContext: tenantContext,
+                        syncEngine: syncEngine,
+                      ),
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: color,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                ),
+                icon: const Icon(Icons.autorenew, size: 18),
+                label: const Text('Renew'),
               ),
             ],
           ),
@@ -423,15 +449,14 @@ class SuperadminDashboardPage extends StatelessWidget {
             final expiryText = alert.tier == AlertTier.expired
                 ? 'Expired on ${dateFormat.format(alert.expiresAt)}'
                 : 'Expires on ${dateFormat.format(alert.expiresAt)} (${alert.daysRemaining} days)';
-            
+
             return Padding(
               padding: const EdgeInsets.only(left: 28, top: 4),
               child: Text(
                 '• ${alert.tenantName}: $expiryText',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.92),
+                    ),
               ),
             );
           }),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/notice_board_repository.dart';
 
 class NoticeBoardPage extends StatefulWidget {
@@ -82,10 +83,11 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
 
                   final notices = snapshot.data ?? const <NoticeBoardEntry>[];
                   if (notices.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No notices yet. Publish announcements from the card above.',
-                      ),
+                    return const ScholifyEmptyState(
+                      icon: Icons.campaign_outlined,
+                      title: 'No notices yet',
+                      message:
+                          'Publish your first announcement using the card above.',
                     );
                   }
 

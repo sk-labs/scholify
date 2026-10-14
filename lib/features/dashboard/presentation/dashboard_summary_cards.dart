@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:scholify/core/database/local_database.dart';
 import 'package:scholify/core/sync/sync_engine.dart';
+import 'package:scholify/core/widgets/scholify_skeleton.dart';
 
 /// The metric a summary card represents. Used for tap-to-filter navigation.
 enum DashboardMetricType {
@@ -205,13 +206,7 @@ class _LoadingCards extends StatelessWidget {
       crossAxisSpacing: 16,
       children: List.generate(
         4,
-        (index) => Card(
-          child: Center(
-            child: CircularProgressIndicator(
-              color: Colors.grey.shade400,
-            ),
-          ),
-        ),
+        (index) => const ScholifyCardSkeleton(),
       ),
     );
   }

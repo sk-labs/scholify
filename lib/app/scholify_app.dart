@@ -5,6 +5,8 @@ import '../core/constants/branding.dart';
 import '../core/services/license_alert_service.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/tenant/tenant_context.dart';
+import '../core/theme/scholify_theme.dart';
+import '../core/theme/theme_controller.dart';
 import '../features/auth/presentation/sign_in_page.dart';
 import '../features/superadmin/presentation/superadmin_dashboard_page.dart';
 import 'scholify_shell_page.dart';
@@ -27,6 +29,13 @@ class ScholifyApp extends StatefulWidget {
 
 class _ScholifyAppState extends State<ScholifyApp> {
   @override
+  void initState() {
+    super.initState();
+    // Load persisted theme preference (fire-and-forget; defaults to light).
+    ThemeController.load();
+  }
+
+  @override
   void dispose() {
     widget.syncEngine.disposeEngine();
     super.dispose();
@@ -38,6 +47,7 @@ class _ScholifyAppState extends State<ScholifyApp> {
       animation: Listenable.merge([
         widget.tenantContext,
         widget.sessionManager,
+        ThemeController.mode,
       ]),
       builder: (context, _) {
         final Widget home;
@@ -58,12 +68,9 @@ class _ScholifyAppState extends State<ScholifyApp> {
         return MaterialApp(
           title: AppBranding.appName,
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF0F4C81),
-            ),
-          ),
+          theme: ScholifyTheme.light(),
+          darkTheme: ScholifyTheme.dark(),
+          themeMode: ThemeController.mode.value,
           routes: {
             '/superadmin': (context) => SuperadminDashboardPage(
               tenantContext: widget.tenantContext,
