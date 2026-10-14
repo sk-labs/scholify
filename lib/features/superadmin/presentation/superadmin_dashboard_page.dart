@@ -54,8 +54,9 @@ class _SuperadminDashboardPageState extends State<SuperadminDashboardPage> {
         final superadminMode = tenantContext.isSuperAdmin;
         final theme = Theme.of(context);
 
+        // No page-level AppBar: the shell already provides the top bar with
+        // tenant branding. The in-page "Platform Overview" header is the title.
         return Scaffold(
-          appBar: AppBar(title: const Text('Superadmin Dashboard')),
           body: LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 800;
