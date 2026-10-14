@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:scholify/core/database/local_database.dart';
 import 'package:scholify/core/sync/sync_engine.dart';
+import 'package:scholify/core/theme/scholify_colors.dart';
 import 'package:scholify/core/widgets/scholify_skeleton.dart';
 
 /// The metric a summary card represents. Used for tap-to-filter navigation.
@@ -126,7 +127,7 @@ class DashboardSummaryCards extends StatelessWidget {
               value: metrics.totalTenants.toString(),
               subtitle: metrics.totalTenants == 1 ? 'school onboard' : 'schools onboard',
               icon: Icons.business,
-              color: Colors.blue,
+              color: ScholifyColors.academicNavy,
               // Progress of active vs total gives the card visual depth.
               progress: metrics.totalTenants == 0
                   ? 0
@@ -143,7 +144,7 @@ class DashboardSummaryCards extends StatelessWidget {
                   ? 'no tenants yet'
                   : '${((metrics.activeTenants / metrics.totalTenants) * 100).round()}% of total',
               icon: Icons.check_circle,
-              color: Colors.green,
+              color: ScholifyColors.scholarTeal,
               progress: metrics.totalTenants == 0
                   ? 0
                   : metrics.activeTenants / metrics.totalTenants,
@@ -159,7 +160,7 @@ class DashboardSummaryCards extends StatelessWidget {
                   ? 'all clear'
                   : 'need attention',
               icon: Icons.warning,
-              color: Colors.orange,
+              color: ScholifyColors.achievementAmber,
               progress: metrics.totalTenants == 0
                   ? 0
                   : metrics.atRiskTenants / metrics.totalTenants,
@@ -175,7 +176,7 @@ class DashboardSummaryCards extends StatelessWidget {
                   ? 'no renewals due'
                   : 'renewals due',
               icon: Icons.schedule,
-              color: Colors.red,
+              color: ScholifyColors.error,
               progress: metrics.activeTenants == 0
                   ? 0
                   : metrics.expiringSoonTenants / metrics.activeTenants,
@@ -243,9 +244,9 @@ class _ErrorCards extends StatelessWidget {
 
 /// Individual summary card widget.
 ///
-/// Visual design: tinted surface, icon in a filled circle, large metric
-/// value, title, contextual subtitle, and a thin progress bar that gives
-/// each card depth and a sense of proportion. Tappable when [onTap] is set.
+/// Professional design: gradient header band with icon, large display metric
+/// value, title, contextual subtitle, and a progress bar. Tappable when
+/// [onTap] is set.
 class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
@@ -270,90 +271,120 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final card = Card(
       elevation: 0,
-      color: color.withValues(alpha: 0.08),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : ScholifyColors.tint(color, 0.25),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Gradient header band with icon + tap affordance
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  color,
+                  color.withValues(alpha: 0.75),
+                ],
+              ),
+            ),
+            child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: Icon(icon, color: color, size: 22),
                 ),
-                const Spacer(),
                 if (onTap != null)
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: color.withValues(alpha: 0.6),
+                  const Icon(
+                    Icons.arrow_forward,
+                    size: 16,
+                    color: Colors.white70,
                   ),
               ],
             ),
-            const Spacer(),
-            Text(
-              value,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress.clamp(0.0, 1.0),
-                      minHeight: 6,
-                      backgroundColor: color.withValues(alpha: 0.15),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+          // Body: value + subtitle + progress
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      color: isDark ? Colors.white : color,
+                      fontWeight: FontWeight.w800,
+                      height: 1.0,
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  progressLabel,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: progress.clamp(0.0, 1.0),
+                            minHeight: 6,
+                            backgroundColor:
+                                ScholifyColors.tint(color, isDark ? 0.2 : 0.12),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(color),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        progressLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
 
     if (onTap == null) return card;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: card,
     );
   }

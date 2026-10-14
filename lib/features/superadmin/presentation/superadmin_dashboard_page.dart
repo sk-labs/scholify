@@ -8,6 +8,7 @@ import '../../../core/services/wizard_validation_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../../core/database/local_database.dart';
+import '../../../core/theme/scholify_colors.dart';
 import '../../dashboard/presentation/dashboard_summary_cards.dart';
 import '../../plan_upgrade/presentation/plan_upgrade_review_page.dart';
 import '../../tenant_detail/presentation/tenant_detail_page.dart';
@@ -38,6 +39,7 @@ class SuperadminDashboardPage extends StatelessWidget {
       builder: (context, _) {
         final activeTenant = tenantContext.tenantName ?? 'No tenant selected';
         final superadminMode = tenantContext.isSuperAdmin;
+        final theme = Theme.of(context);
 
         return Scaffold(
           appBar: AppBar(title: const Text('Superadmin Dashboard')),
@@ -57,51 +59,124 @@ class SuperadminDashboardPage extends StatelessWidget {
               ),
               // Main dashboard content
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isWide = constraints.maxWidth > 800;
-                      return ListView(
-                        children: [
-                          // Q4: Dashboard summary metric cards (tap navigates to licensing)
-                          DashboardSummaryCards(
-                            syncEngine: syncEngine,
-                            onCardTap: (type) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => TenantLicensingPage(
-                                    tenantContext: tenantContext,
-                                    syncEngine: syncEngine,
-                                    initialActiveFilter:
-                                        type == DashboardMetricType.active
-                                            ? true
-                                            : null,
-                                  ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 800;
+                    return ListView(
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        // Page header: title + context
+                        _buildPageHeader(context, theme, activeTenant),
+                        const SizedBox(height: 20),
+                        // Q4: Dashboard summary metric cards (tap navigates to licensing)
+                        DashboardSummaryCards(
+                          syncEngine: syncEngine,
+                          onCardTap: (type) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => TenantLicensingPage(
+                                  tenantContext: tenantContext,
+                                  syncEngine: syncEngine,
+                                  initialActiveFilter:
+                                      type == DashboardMetricType.active
+                                          ? true
+                                          : null,
                                 ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Manage',
-                            style:
-                                Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildModuleGrid(context, isWide, superadminMode, activeTenant),
-                        ],
-                      );
-                    },
-                  ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 28),
+                        _buildSectionHeader(
+                          context,
+                          theme,
+                          'Management',
+                          'Tools to run the platform',
+                        ),
+                        const SizedBox(height: 12),
+                        _buildModuleGrid(
+                            context, isWide, superadminMode, activeTenant),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  /// Page header with title, subtitle, and tenant context chip.
+  Widget _buildPageHeader(
+      BuildContext context, ThemeData theme, String activeTenant) {
+    final scheme = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Platform Overview',
+                style: theme.textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Monitor tenants, licenses, and system health at a glance.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: ScholifyColors.tint(scheme.primary, 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: ScholifyColors.tint(scheme.primary, 0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.business,
+                  size: 16, color: scheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                activeTenant,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: scheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Section header with title + subtitle.
+  Widget _buildSectionHeader(BuildContext context, ThemeData theme,
+      String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: theme.textTheme.titleLarge),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 
@@ -119,7 +194,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Guided 3-step flow to create a tenant, issue a license, and provision the owner.',
         status: superadminMode ? 'Create Tenant' : 'Restricted',
         icon: Icons.person_add,
-        color: Colors.blue,
+        color: ScholifyColors.academicNavy,
         onTap: () {
           final auditLogService = AuditLogService(
             database: syncEngine.database,
@@ -143,7 +218,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Create licenses, assign plans, and suspend/activate schools.',
         status: superadminMode ? 'Active' : 'Restricted',
         icon: Icons.badge,
-        color: Colors.indigo,
+        color: ScholifyColors.accentStudents,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -160,7 +235,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Create owner accounts and bootstrap tenant defaults.',
         status: activeTenant,
         icon: Icons.manage_accounts,
-        color: Colors.teal,
+        color: ScholifyColors.scholarTeal,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -177,7 +252,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Track tenant limits, seat counts, and renewal lifecycle.',
         status: 'Pending sync jobs: ${syncEngine.pendingJobs}',
         icon: Icons.receipt_long,
-        color: Colors.green,
+        color: ScholifyColors.success,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -194,7 +269,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Enable/disable modules per tenant for plan-based access.',
         status: 'Configure Access',
         icon: Icons.tune,
-        color: Colors.orange,
+        color: ScholifyColors.achievementAmber,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -211,7 +286,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Review write operations, actors, and entity changes.',
         status: 'View Log',
         icon: Icons.history,
-        color: Colors.brown,
+        color: ScholifyColors.slate600,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -227,7 +302,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Approve or reject tenant plan upgrade requests.',
         status: 'Review',
         icon: Icons.upgrade,
-        color: Colors.purple,
+        color: ScholifyColors.accentOperations,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -244,7 +319,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Per-tenant usage metrics, MAU trends, and CSV export.',
         status: 'View Analytics',
         icon: Icons.analytics,
-        color: Colors.cyan,
+        color: ScholifyColors.tealSoft,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
@@ -261,7 +336,7 @@ class SuperadminDashboardPage extends StatelessWidget {
         subtitle: 'Open a tenant detail view (single tenant management).',
         status: 'Pick Tenant',
         icon: Icons.business,
-        color: Colors.deepOrange,
+        color: ScholifyColors.accentComms,
         onTap: () => _openTenantDetailPicker(context),
       ),
     ];
@@ -279,15 +354,22 @@ class SuperadminDashboardPage extends StatelessWidget {
     ];
 
     if (!isWide) {
-      return Column(children: cards);
+      return Column(
+        children: [
+          for (var i = 0; i < cards.length; i++) ...[
+            cards[i],
+            if (i < cards.length - 1) const SizedBox(height: 12),
+          ],
+        ],
+      );
     }
     return GridView.count(
       crossAxisCount: 2,
-      childAspectRatio: 2.6,
+      childAspectRatio: 2.4,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
+      mainAxisSpacing: 14,
+      crossAxisSpacing: 14,
       children: cards,
     );
   }
@@ -397,28 +479,48 @@ class SuperadminDashboardPage extends StatelessWidget {
     required List<LicenseAlert> alerts,
     required DateFormat dateFormat,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: color,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, color.withValues(alpha: 0.85)],
+        ),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Colors.white),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               // Inline action: jump straight to licensing to renew.
@@ -444,25 +546,48 @@ class SuperadminDashboardPage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ...alerts.map((alert) {
-            final expiryText = alert.tier == AlertTier.expired
-                ? 'Expired on ${dateFormat.format(alert.expiresAt)}'
-                : 'Expires on ${dateFormat.format(alert.expiresAt)} (${alert.daysRemaining} days)';
-
-            return Padding(
-              padding: const EdgeInsets.only(left: 28, top: 4),
-              child: Text(
-                '• ${alert.tenantName}: $expiryText',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.92),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final alert in alerts)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle,
+                            size: 6, color: Colors.white70),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${alert.tenantName}: ${_expiryText(alert, dateFormat)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-              ),
-            );
-          }),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _expiryText(LicenseAlert alert, DateFormat dateFormat) {
+    if (alert.tier == AlertTier.expired) {
+      return 'Expired on ${dateFormat.format(alert.expiresAt)}';
+    }
+    return 'Expires on ${dateFormat.format(alert.expiresAt)} (${alert.daysRemaining}d left)';
   }
 }
 
@@ -505,27 +630,47 @@ class _ModuleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
       elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           child: Row(
             children: [
+              // Gradient icon medallion
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color, color.withValues(alpha: 0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: color, size: 26),
+                child: Icon(icon, color: Colors.white, size: 26),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -535,34 +680,33 @@ class _ModuleCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: scheme.onSurfaceVariant,
+                        height: 1.4,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 10,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
+                        color: ScholifyColors.tint(color, isDark ? 0.2 : 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         status,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
+                          color: isDark ? color.lighten() : color,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -570,14 +714,34 @@ class _ModuleCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurfaceVariant,
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: ScholifyColors.tint(
+                      scheme.onSurface, isDark ? 0.08 : 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_forward,
+                  size: 16,
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+/// Lightens a color for dark-mode legibility.
+extension on Color {
+  Color lighten([double amount = 0.25]) {
+    final hsl = HSLColor.fromColor(this);
+    return hsl
+        .withLightness((hsl.lightness + amount).clamp(0.0, 1.0))
+        .toColor();
   }
 }
