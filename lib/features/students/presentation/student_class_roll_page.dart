@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/student_repository.dart';
 
 class StudentClassRollPage extends StatefulWidget {
@@ -53,10 +55,10 @@ class _StudentClassRollPageState extends State<StudentClassRollPage> {
 
   @override
   Widget build(BuildContext context) {
+    // No page-level AppBar: the shell provides the top bar.
     return Scaffold(
-      appBar: AppBar(title: const Text('Student Class Roll (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: StreamBuilder<List<StudentDirectoryEntry>>(
           stream: _repository.watchStudents(),
           builder: (context, studentsSnapshot) {
@@ -75,17 +77,32 @@ class _StudentClassRollPageState extends State<StudentClassRollPage> {
             final students =
                 studentsSnapshot.data ?? const <StudentDirectoryEntry>[];
             if (students.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No students found. Add students in Students tab first.',
-                ),
+              return const ScholifyEmptyState(
+                icon: Icons.groups_outlined,
+                title: 'No students found',
+                message: 'Add students in the Students tab first.',
+                accent: ScholifyColors.academicNavy,
               );
             }
 
             final selectedStudentId = _resolveSelectedStudentId(students);
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Class Roll',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Assign students to classes and sections.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _buildStudentSelector(students, selectedStudentId),
                 const SizedBox(height: 12),
                 _buildClassRollForm(selectedStudentId),
@@ -111,10 +128,12 @@ class _StudentClassRollPageState extends State<StudentClassRollPage> {
 
                       final rows = classRollSnapshot.data ?? const [];
                       if (rows.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No class roll records for this student yet.',
-                          ),
+                        return const ScholifyEmptyState(
+                          icon: Icons.class_outlined,
+                          title: 'No class assignments yet',
+                          message:
+                              'Assign the selected student to a class to get started.',
+                          accent: ScholifyColors.academicNavy,
                         );
                       }
 
@@ -130,7 +149,30 @@ class _StudentClassRollPageState extends State<StudentClassRollPage> {
                               : '${row.className} - ${row.sectionName}';
 
                           return Card(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ),
                             child: ListTile(
+                              leading: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: ScholifyColors.tint(
+                                      ScholifyColors.academicNavy, 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.class_outlined,
+                                  color: ScholifyColors.academicNavy,
+                                ),
+                              ),
                               title: Text(
                                 '${row.academicSession} | $classLabel',
                               ),
@@ -198,8 +240,18 @@ class _StudentClassRollPageState extends State<StudentClassRollPage> {
 
   Widget _buildClassRollForm(String selectedStudentId) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context)
+              .colorScheme
+              .outlineVariant
+              .withValues(alpha: 0.6),
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Wrap(
           spacing: 12,
           runSpacing: 12,

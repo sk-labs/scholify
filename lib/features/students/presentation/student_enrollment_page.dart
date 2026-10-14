@@ -5,6 +5,8 @@ import '../../../core/database/local_database.dart';
 import '../../../core/services/seat_limit_enforcement_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/student_repository.dart';
 
 class StudentEnrollmentPage extends StatefulWidget {
@@ -64,9 +66,9 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Student Enrollment (Offline-First)')),
+      // No page-level AppBar: the shell provides the top bar.
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: StreamBuilder<List<StudentDirectoryEntry>>(
           stream: _repository.watchStudents(),
           builder: (context, studentsSnapshot) {
@@ -95,7 +97,17 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
             final selectedStudentId = _resolveSelectedStudentId(students);
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Enrollment', style: Theme.of(context).textTheme.headlineMedium),
+                const SizedBox(height: 4),
+                Text(
+                  'Enroll students into classes for the academic year.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _buildStudentSelector(students, selectedStudentId),
                 const SizedBox(height: 12),
                 _buildEnrollmentForm(selectedStudentId),
@@ -121,10 +133,11 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
 
                       final rows = enrollmentSnapshot.data ?? const [];
                       if (rows.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No enrollment records for this student yet.',
-                          ),
+                        return const ScholifyEmptyState(
+                          icon: Icons.how_to_reg_outlined,
+                          title: 'No enrollments yet',
+                          message: 'Enroll the selected student to see records here.',
+                          accent: ScholifyColors.scholarTeal,
                         );
                       }
 
@@ -145,6 +158,13 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
                                 ).format(row.leftOn!.toLocal());
 
                           return Card(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                              ),
+                            ),
                             child: ListTile(
                               title: Text(
                                 '${row.academicSession} - ${row.enrollmentStatus.toUpperCase()}',
@@ -211,8 +231,15 @@ class _StudentEnrollmentPageState extends State<StudentEnrollmentPage> {
 
   Widget _buildEnrollmentForm(String selectedStudentId) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Wrap(
           spacing: 12,
           runSpacing: 12,
