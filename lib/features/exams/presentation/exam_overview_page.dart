@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/exam_repository.dart';
 import 'exam_analytics_panel.dart';
 
@@ -63,10 +65,15 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
     final monthLabel = DateFormat('MMMM yyyy').format(_selectedMonth);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Exams (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: StreamBuilder<List<StudentDirectoryEntry>>(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildPageHeader(context),
+            const SizedBox(height: 16),
+            Expanded(
+              child: StreamBuilder<List<StudentDirectoryEntry>>(
           stream: _repository.watchStudents(),
           builder: (context, studentsSnapshot) {
             if (studentsSnapshot.connectionState == ConnectionState.waiting) {
@@ -84,10 +91,11 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
             final students =
                 studentsSnapshot.data ?? const <StudentDirectoryEntry>[];
             if (students.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No students found. Add students in the Students tab first.',
-                ),
+              return const ScholifyEmptyState(
+                icon: Icons.people_outline,
+                title: 'No students yet',
+                message: 'Add students in the Students tab first.',
+                accent: ScholifyColors.accentStudents,
               );
             }
 
@@ -143,6 +151,38 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
               ],
             );
           },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Exams', style: theme.textTheme.headlineMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Schedule exams, record marks, and track performance.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  ShapeBorder _cardShape(BuildContext context) {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(
+        color: Theme.of(context).colorScheme.outlineVariant.withValues(
+          alpha: 0.6,
         ),
       ),
     );
@@ -194,6 +234,7 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
           width: 280,
           child: Card(
             margin: EdgeInsets.zero,
+            shape: _cardShape(context),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
@@ -238,6 +279,8 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
     final isEditing = _editingSchedule != null;
 
     return Card(
+      shape: _cardShape(context),
+      color: ScholifyColors.tint(ScholifyColors.academicNavy, 0.06),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Wrap(
@@ -336,17 +379,16 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
 
         final schedules = snapshot.data ?? const [];
         if (schedules.isEmpty) {
-          return const Card(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No exam schedules in this month.'),
-              ),
-            ),
+          return const ScholifyEmptyState(
+            icon: Icons.calendar_month,
+            title: 'No exam schedules',
+            message: 'No exam schedules in this month. Create one above.',
+            accent: ScholifyColors.achievementAmber,
           );
         }
 
         return Card(
+          shape: _cardShape(context),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
             child: Column(
@@ -373,6 +415,21 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
                           _markingScheduleId == row.id;
 
                       return ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: ScholifyColors.tint(
+                              ScholifyColors.academicNavy,
+                              0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.quiz_outlined,
+                            color: ScholifyColors.academicNavy,
+                          ),
+                        ),
                         title: Text('${row.examName} - ${row.subjectName}'),
                         subtitle: Text(
                           '$dateText | Max: ${row.maxMarks.toStringAsFixed(0)}',
@@ -446,15 +503,11 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
 
         final marks = snapshot.data ?? const [];
         if (marks.isEmpty) {
-          return const Card(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No marks recorded for this student in this month.',
-                ),
-              ),
-            ),
+          return const ScholifyEmptyState(
+            icon: Icons.grading_outlined,
+            title: 'No marks recorded',
+            message: 'No marks recorded for this student in this month.',
+            accent: ScholifyColors.scholarTeal,
           );
         }
 
@@ -469,6 +522,7 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
         final percent = totalMax <= 0 ? 0 : (totalObtained / totalMax) * 100;
 
         return Card(
+          shape: _cardShape(context),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
             child: Column(
@@ -493,6 +547,21 @@ class _ExamOverviewPageState extends State<ExamOverviewPage> {
                       final isMarkBusy = _processingMarkId == row.markId;
 
                       return ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: ScholifyColors.tint(
+                              ScholifyColors.scholarTeal,
+                              0.1,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.assignment_outlined,
+                            color: ScholifyColors.scholarTeal,
+                          ),
+                        ),
                         title: Text('${row.examName} - ${row.subjectName}'),
                         subtitle: Text(
                           '$dateText | ${row.marksObtained.toStringAsFixed(1)} / ${row.maxMarks.toStringAsFixed(1)}',

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/homework_repository.dart';
 
 class HomeworkAssignmentsPage extends StatefulWidget {
@@ -59,11 +61,12 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Homework & Daily Assignments')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            _buildPageHeader(context),
+            const SizedBox(height: 16),
             _buildTypeSelector(),
             const SizedBox(height: 12),
             _buildComposerCard(),
@@ -93,28 +96,40 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
                   final rows =
                       snapshot.data ?? const <HomeworkAssignmentEntry>[];
                   if (rows.isEmpty) {
-                    return Center(
-                      child: Text(
-                        _selectedType == HomeworkRepository.dailyAssignmentType
-                            ? 'No daily assignments found.'
-                            : 'No homework assignments found.',
-                      ),
+                    final isDaily = _selectedType ==
+                        HomeworkRepository.dailyAssignmentType;
+                    return ScholifyEmptyState(
+                      icon: isDaily
+                          ? Icons.wb_sunny_outlined
+                          : Icons.menu_book_outlined,
+                      title: isDaily
+                          ? 'No daily assignments yet'
+                          : 'No homework yet',
+                      message: isDaily
+                          ? 'Post a daily assignment above and it will appear here for teachers and parents.'
+                          : 'Create a homework assignment above and it will appear here for students to complete.',
+                      accent: ScholifyColors.academicNavy,
                     );
                   }
 
                   return ListView.separated(
                     itemCount: rows.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final row = rows[index];
                       final isViewing = _viewingSubmissionsFor?.id == row.id;
+                      final isDaily = row.assignmentType ==
+                          HomeworkRepository.dailyAssignmentType;
                       return Card(
+                        shape: _cardShape(context),
                         child: ListTile(
-                          leading: Icon(
-                            row.assignmentType ==
-                                    HomeworkRepository.dailyAssignmentType
+                          leading: _buildIconMedallion(
+                            isDaily
                                 ? Icons.wb_sunny_outlined
                                 : Icons.menu_book_outlined,
+                            isDaily
+                                ? ScholifyColors.achievementAmber
+                                : ScholifyColors.academicNavy,
                           ),
                           title: Text(row.title),
                           subtitle: Text(_assignmentSubtitle(row)),
@@ -160,20 +175,73 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
     );
   }
 
+  /// In-page header (the shell already provides the top AppBar).
+  Widget _buildPageHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Homework & Daily Assignments',
+          style: theme.textTheme.headlineMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Assign and track homework across classes.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Shared card shape: 16px radius with a subtle outline border.
+  ShapeBorder _cardShape(BuildContext context) {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(
+        color:
+            Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+      ),
+    );
+  }
+
+  /// Tinted icon medallion in a palette color.
+  Widget _buildIconMedallion(IconData icon, Color color) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: ScholifyColors.tint(color, 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+
   Widget _buildSubmissionsPanel(HomeworkAssignmentEntry assignment) {
+    final theme = Theme.of(context);
     return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      shape: _cardShape(context),
+      color: ScholifyColors.tint(ScholifyColors.scholarTeal, 0.08),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                _buildIconMedallion(
+                  Icons.assignment_turned_in_outlined,
+                  ScholifyColors.scholarTeal,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Submissions: ${assignment.title}',
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: theme.textTheme.titleSmall,
                   ),
                 ),
                 FilledButton.tonalIcon(
@@ -197,8 +265,12 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
                   final submissions =
                       snapshot.data ?? const <HomeworkSubmissionEntry>[];
                   if (submissions.isEmpty) {
-                    return const Center(
-                      child: Text('No submissions yet for this assignment.'),
+                    return const ScholifyEmptyState(
+                      icon: Icons.inbox_outlined,
+                      title: 'No submissions yet',
+                      message:
+                          'Submissions for this assignment will appear here once students turn in their work.',
+                      accent: ScholifyColors.scholarTeal,
                     );
                   }
                   return ListView.separated(
@@ -473,9 +545,11 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
   }
 
   Widget _buildComposerCard() {
+    final theme = Theme.of(context);
     return Card(
+      shape: _cardShape(context),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -483,7 +557,9 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
               _selectedType == HomeworkRepository.dailyAssignmentType
                   ? 'Add Daily Assignment'
                   : 'Add Homework',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
