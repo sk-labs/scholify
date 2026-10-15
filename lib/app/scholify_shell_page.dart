@@ -15,6 +15,9 @@ import '../core/theme/scholify_colors.dart';
 import '../features/impersonation/presentation/impersonation_banner.dart';
 import '../features/attendance/presentation/attendance_overview_page.dart';
 import '../features/attendance/presentation/guardian_attendance_page.dart';
+import '../features/timetable/presentation/guardian_timetable_page.dart';
+import '../features/homework/presentation/guardian_homework_page.dart';
+import '../features/profile/presentation/guardian_profile_page.dart';
 import '../features/bootstrap/presentation/bootstrap_home_page.dart';
 import '../features/curriculum/presentation/curriculum_page.dart';
 import '../features/documents/presentation/document_center_page.dart';
@@ -79,6 +82,126 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
     // Load persisted branding into TenantContext so the app bar reflects it
     // immediately on shell mount (B3.3, B3.4, B3.5, B3.6)
     _loadBrandingIntoContext();
+    // Check if guardian/student needs to complete their profile on first login.
+    _checkProfileCompletion();
+  }
+
+  /// Shows a blocking profile-completion dialog for guardians/students
+  /// logging in for the first time (profile_completed = false).
+  Future<void> _checkProfileCompletion() async {
+    if (!_isFamilyRole()) return;
+    try {
+      final gateway = widget.syncEngine.pocketbaseGateway;
+      final authModel = gateway.client.authStore.model;
+      final userId = authModel?.id;
+      if (userId == null || userId.isEmpty) return;
+      final record =
+          await gateway.client.collection('users').getOne(userId);
+      final completed = record.getBoolValue('profile_completed');
+      if (!completed && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showProfileCompletionDialog();
+        });
+      }
+    } catch (_) {
+      // If we can't check, don't block the user.
+    }
+  }
+
+  /// Blocking dialog that forces profile completion before using the panel.
+  /// Contains the profile form directly — guardian must complete it to proceed.
+  void _showProfileCompletionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Cannot dismiss by tapping outside.
+      builder: (context) => PopScope(
+        canPop: false, // Cannot dismiss with back button.
+        child: Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: Container(
+            width: 500,
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        ScholifyColors.academicNavy,
+                        ScholifyColors.scholarTeal.withValues(alpha: 0.85),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person_add_outlined,
+                          color: Colors.white, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Complete Your Profile',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                            Text(
+                              'Required before using the panel',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white
+                                        .withValues(alpha: 0.8),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _ProfileCompletionForm(
+                      syncEngine: widget.syncEngine,
+                      onCompleted: () {
+                        Navigator.pop(context);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Profile completed. Welcome!'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Loads the tenant's branding from the local DB and seeds TenantContext.
@@ -177,6 +300,42 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       }
     }
     return null;
+  }
+
+  /// Returns true if the current user is a guardian or student.
+  bool _isFamilyRole() {
+    final role = widget.tenantContext.role.toLowerCase();
+    return role == 'guardian' || role == 'student';
+  }
+
+  /// Returns the timetable page appropriate for the current user's role.
+  Widget _timetablePageForRole() {
+    final role = widget.tenantContext.role.toLowerCase();
+    if (role == 'guardian' || role == 'student') {
+      return GuardianTimetablePage(
+        tenantContext: widget.tenantContext,
+        syncEngine: widget.syncEngine,
+      );
+    }
+    return TimetableOverviewPage(
+      tenantContext: widget.tenantContext,
+      syncEngine: widget.syncEngine,
+    );
+  }
+
+  /// Returns the homework page appropriate for the current user's role.
+  Widget _homeworkPageForRole() {
+    final role = widget.tenantContext.role.toLowerCase();
+    if (role == 'guardian' || role == 'student') {
+      return GuardianHomeworkPage(
+        tenantContext: widget.tenantContext,
+        syncEngine: widget.syncEngine,
+      );
+    }
+    return HomeworkAssignmentsPage(
+      tenantContext: widget.tenantContext,
+      syncEngine: widget.syncEngine,
+    );
   }
 
   /// Returns the attendance page appropriate for the current user's role.
@@ -347,10 +506,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           label: 'Timetable',
           icon: Icons.view_week,
         color: ScholifyColors.scholarTeal,
-          page: TimetableOverviewPage(
-            tenantContext: widget.tenantContext,
-            syncEngine: widget.syncEngine,
-          ),
+          page: _timetablePageForRole(),
         section: _ShellSection.academics
       ),
       if (access[ScholifyModuleFeature.transport] ?? false)
@@ -369,10 +525,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           label: 'Homework',
           icon: Icons.assignment,
         color: ScholifyColors.achievementAmber,
-          page: HomeworkAssignmentsPage(
-            tenantContext: widget.tenantContext,
-            syncEngine: widget.syncEngine,
-          ),
+          page: _homeworkPageForRole(),
         section: _ShellSection.academics
       ),
       if (access[ScholifyModuleFeature.onlineLearning] ?? false)
@@ -473,6 +626,18 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
             syncEngine: widget.syncEngine,
           ),
         section: _ShellSection.academics
+      ),
+      // Profile page for guardians and students.
+      if (_isFamilyRole())
+        _ShellDestination(
+          label: 'My Profile',
+          icon: Icons.person_outlined,
+        color: ScholifyColors.academicNavy,
+          page: GuardianProfilePage(
+            tenantContext: widget.tenantContext,
+            syncEngine: widget.syncEngine,
+          ),
+        section: _ShellSection.foundation
       ),
     ];
 
@@ -920,4 +1085,148 @@ enum _ShellSection {
 
   final String label;
   final IconData icon;
+}
+
+/// Form embedded in the first-login blocking dialog.
+/// Guardian must complete all fields to unlock the panel.
+class _ProfileCompletionForm extends StatefulWidget {
+  const _ProfileCompletionForm({
+    required this.syncEngine,
+    required this.onCompleted,
+  });
+
+  final SyncEngine syncEngine;
+  final VoidCallback onCompleted;
+
+  @override
+  State<_ProfileCompletionForm> createState() =>
+      _ProfileCompletionFormState();
+}
+
+class _ProfileCompletionFormState
+    extends State<_ProfileCompletionForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _relationshipController = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _relationshipController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    try {
+      final gateway = widget.syncEngine.pocketbaseGateway;
+      final userId = gateway.client.authStore.model?.id;
+      if (userId == null || userId.isEmpty) {
+        throw Exception('Not signed in');
+      }
+      await gateway.client.collection('users').update(userId, body: {
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+        'relationship': _relationshipController.text.trim(),
+        'profile_completed': true,
+      });
+      widget.onCompleted();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _nameController,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Full name is required'
+                : null,
+            decoration: const InputDecoration(
+              labelText: 'Full Name',
+              prefixIcon: Icon(Icons.person_outlined),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Phone number is required'
+                : null,
+            decoration: const InputDecoration(
+              labelText: 'Phone Number',
+              prefixIcon: Icon(Icons.phone_outlined),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _relationshipController,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Relationship is required'
+                : null,
+            decoration: const InputDecoration(
+              labelText: 'Relationship with Student',
+              hintText: 'e.g. Father, Mother, Guardian',
+              prefixIcon:
+                  Icon(Icons.family_restroom_outlined),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _addressController,
+            maxLines: 2,
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Home address is required'
+                : null,
+            decoration: const InputDecoration(
+              labelText: 'Home Address',
+              prefixIcon: Icon(Icons.home_outlined),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: _isSaving ? null : _submit,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white),
+                    )
+                  : const Icon(Icons.check_circle_outlined),
+              label: Text(
+                  _isSaving ? 'Saving...' : 'Complete Profile'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
