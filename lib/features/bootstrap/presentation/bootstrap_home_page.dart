@@ -110,11 +110,33 @@ class BootstrapHomePage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: _buildActionButtons(context),
-                  ),
+                  // Action cards: 2-column grid on wide screens.
+                  if (isWide)
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 2.2,
+                      children: [
+                        for (final spec in _buildActionSpecs(context))
+                          _ActionCard(spec: spec),
+                      ],
+                    )
+                  else
+                    Column(
+                      children: [
+                        for (var i = 0;
+                            i < _buildActionSpecs(context).length;
+                            i++) ...[
+                          _ActionCard(
+                              spec: _buildActionSpecs(context)[i]),
+                          if (i < _buildActionSpecs(context).length - 1)
+                            const SizedBox(height: 12),
+                        ],
+                      ],
+                    ),
                 ],
               );
             },
@@ -128,14 +150,20 @@ class BootstrapHomePage extends StatelessWidget {
   /// Debug/superadmin tools (Set Demo Tenant, Queue Demo Job) are only
   /// visible to superadmins. Regular tenant users see sync controls plus
   /// their own actions (Plan Upgrade, Branding Settings).
-  List<Widget> _buildActionButtons(BuildContext context) {
-    final buttons = <Widget>[];
+  /// Quick action definitions with icons, colors, and handlers.
+  /// Returns a list of (_ActionSpec) for the current user role.
+  List<_ActionSpec> _buildActionSpecs(BuildContext context) {
+    final specs = <_ActionSpec>[];
 
     // Superadmin-only debug tools.
     if (tenantContext.isSuperAdmin) {
-      buttons.addAll([
-        ElevatedButton.icon(
-          onPressed: () {
+      specs.addAll([
+        _ActionSpec(
+          icon: Icons.business_outlined,
+          color: ScholifyColors.academicNavy,
+          title: 'Set Demo Tenant',
+          subtitle: 'Switch to demo workspace',
+          onTap: () {
             tenantContext.setTenant(
               tenantId: 'school_demo',
               tenantName: 'Demo School',
@@ -146,11 +174,13 @@ class BootstrapHomePage extends StatelessWidget {
               const SnackBar(content: Text('Demo tenant applied.')),
             );
           },
-          icon: const Icon(Icons.business),
-          label: const Text('Set Demo Tenant'),
         ),
-        ElevatedButton.icon(
-          onPressed: () async {
+        _ActionSpec(
+          icon: Icons.playlist_add_outlined,
+          color: ScholifyColors.accentOperations,
+          title: 'Queue Demo Job',
+          subtitle: 'Enqueue test sync op',
+          onTap: () async {
             await syncEngine.enqueueOperation(
               entityType: 'tenant_license',
               entityId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -169,41 +199,44 @@ class BootstrapHomePage extends StatelessWidget {
               );
             }
           },
-          icon: const Icon(Icons.playlist_add),
-          label: const Text('Queue Demo Job'),
         ),
       ]);
     }
 
     // Sync controls: visible to everyone.
-    buttons.addAll([
-      ElevatedButton.icon(
-        onPressed: syncEngine.isBackgroundSyncEnabled
+    specs.addAll([
+      _ActionSpec(
+        icon: syncEngine.isBackgroundSyncEnabled
+            ? Icons.pause_circle_outline
+            : Icons.play_circle_outline,
+        color: ScholifyColors.scholarTeal,
+        title: syncEngine.isBackgroundSyncEnabled
+            ? 'Stop Background Sync'
+            : 'Start Background Sync',
+        subtitle: syncEngine.isBackgroundSyncEnabled
+            ? 'Pause automatic syncing'
+            : 'Enable automatic syncing',
+        onTap: syncEngine.isBackgroundSyncEnabled
             ? syncEngine.stopBackgroundSync
             : syncEngine.startBackgroundSync,
-        icon: Icon(
-          syncEngine.isBackgroundSyncEnabled
-              ? Icons.pause_circle
-              : Icons.play_circle,
-        ),
-        label: Text(
-          syncEngine.isBackgroundSyncEnabled
-              ? 'Stop Background Sync'
-              : 'Start Background Sync',
-        ),
       ),
-      OutlinedButton.icon(
-        onPressed: syncEngine.manualSync,
-        icon: const Icon(Icons.sync),
-        label: const Text('Run Manual Sync'),
+      _ActionSpec(
+        icon: Icons.sync_outlined,
+        color: ScholifyColors.info,
+        title: 'Run Manual Sync',
+        subtitle: 'Sync now with server',
+        onTap: syncEngine.manualSync,
       ),
     ]);
 
     if (!tenantContext.isSuperAdmin) {
-      // Insert after the sync controls (which are always present).
-      buttons.insertAll(2, [
-        ElevatedButton.icon(
-          onPressed: () {
+      specs.addAll([
+        _ActionSpec(
+          icon: Icons.upgrade_outlined,
+          color: ScholifyColors.achievementAmber,
+          title: 'Request Plan Upgrade',
+          subtitle: 'Unlock more features',
+          onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => PlanUpgradePage(
@@ -213,11 +246,13 @@ class BootstrapHomePage extends StatelessWidget {
               ),
             );
           },
-          icon: const Icon(Icons.upgrade),
-          label: const Text('Request Plan Upgrade'),
         ),
-        ElevatedButton.icon(
-          onPressed: () {
+        _ActionSpec(
+          icon: Icons.palette_outlined,
+          color: ScholifyColors.accentComms,
+          title: 'Branding Settings',
+          subtitle: 'Logo, colors, name',
+          onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => BrandingSettingsPage(
@@ -227,17 +262,19 @@ class BootstrapHomePage extends StatelessWidget {
               ),
             );
           },
-          icon: const Icon(Icons.palette),
-          label: const Text('Branding Settings'),
         ),
       ]);
     }
 
     final signOut = onSignOut;
     if (signOut != null) {
-      buttons.add(
-        OutlinedButton.icon(
-          onPressed: () async {
+      specs.add(
+        _ActionSpec(
+          icon: Icons.logout_outlined,
+          color: ScholifyColors.slate600,
+          title: 'Sign Out',
+          subtitle: 'End this session',
+          onTap: () async {
             await signOut.call();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -247,77 +284,153 @@ class BootstrapHomePage extends StatelessWidget {
               );
             }
           },
-          icon: const Icon(Icons.logout),
-          label: const Text('Sign Out'),
         ),
       );
     }
 
-    return buttons;
+    return specs;
   }
 
-  /// Page header with title, subtitle, and the sync-failure warning badge
-  /// (A2.7) — moved here from the removed page-level AppBar.
+  /// Page header with welcome banner for the dashboard.
   Widget _buildHeader(BuildContext context, ThemeData theme) {
-    final scheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    return Row(
+    final tenantName = tenantContext.tenantName ?? 'Scholify';
+    final roleLabel = tenantContext.isSuperAdmin
+        ? 'Superadmin'
+        : tenantContext.role.replaceAll('_', ' ').split(' ').map((w) =>
+            w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}').join(' ');
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Scholify Foundation',
-                style: theme.textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Your workspace home — product, tenant, and sync health at a glance.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+        // Welcome banner with gradient
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                ScholifyColors.academicNavy,
+                ScholifyColors.navyLight,
+                ScholifyColors.scholarTeal.withValues(alpha: 0.85),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: ScholifyColors.academicNavy.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-        ),
-        StreamBuilder<List<dynamic>>(
-          stream: syncEngine.database.watchFailedSyncEntries(),
-          builder: (context, snapshot) {
-            final failedCount = snapshot.data?.length ?? 0;
-
-            // Only show the badge when there are failures.
-            if (failedCount == 0) {
-              return const SizedBox.shrink();
-            }
-
-            return Container(
-              decoration: BoxDecoration(
-                color: ScholifyColors.tint(
-                  ScholifyColors.error,
-                  isDark ? 0.2 : 0.12,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      tenantName,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            tenantContext.isSuperAdmin
+                                ? Icons.admin_panel_settings_outlined
+                                : Icons.business_outlined,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            roleLabel,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: IconButton(
-                icon: Badge(
-                  label: Text('$failedCount'),
-                  backgroundColor: ScholifyColors.error,
-                  textColor: Colors.white,
-                  child: const Icon(Icons.warning_amber_rounded),
-                ),
-                tooltip: 'Sync Failures ($failedCount)',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const SyncFailurePage(),
+              // Sync failure badge (if any)
+              StreamBuilder<List<dynamic>>(
+                stream: syncEngine.database.watchFailedSyncEntries(),
+                builder: (context, snapshot) {
+                  final failedCount = snapshot.data?.length ?? 0;
+                  if (failedCount == 0) {
+                    return Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.school_outlined,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    );
+                  }
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: ScholifyColors.error.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: IconButton(
+                      icon: Badge(
+                        label: Text('$failedCount'),
+                        backgroundColor: Colors.white,
+                        textColor: ScholifyColors.error,
+                        child: const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                      tooltip: 'Sync Failures ($failedCount)',
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SyncFailurePage(),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
               ),
-            );
-          },
+            ],
+          ),
         ),
       ],
     );
@@ -405,6 +518,102 @@ class _StatusCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Specification for a quick action card.
+class _ActionSpec {
+  const _ActionSpec({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+}
+
+/// A polished quick action card: icon medallion + title + subtitle,
+/// 16px radius with subtle border and hover effect.
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({required this.spec});
+
+  final _ActionSpec spec;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: spec.onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: spec.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(spec.icon, color: spec.color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      spec.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      spec.subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
         ),
       ),
     );
