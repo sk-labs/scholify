@@ -229,7 +229,15 @@ class BootstrapHomePage extends StatelessWidget {
       ),
     ]);
 
-    if (!tenantContext.isSuperAdmin) {
+    // Owner/admin-only: plan upgrades and branding. Teachers don't manage
+    // billing or school branding.
+    final role = tenantContext.role.toLowerCase();
+    final isOwnerOrAdmin = !tenantContext.isSuperAdmin &&
+        (role == 'school_owner' ||
+            role == 'owner' ||
+            role == 'school_admin' ||
+            role == 'admin');
+    if (isOwnerOrAdmin) {
       specs.addAll([
         _ActionSpec(
           icon: Icons.upgrade_outlined,
