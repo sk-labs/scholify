@@ -782,12 +782,8 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
   PreferredSizeWidget _buildBrandingAppBar({required bool compact}) {
     final logoBase64 = widget.tenantContext.brandingLogoBase64;
     // In superadmin mode the top-left brand is always the Scholify product
-    // identity, not the "Global Superadmin" context label.
-    final displayName = widget.tenantContext.isSuperAdmin
-        ? 'Scholify'
-        : (widget.tenantContext.brandingDisplayName ??
-            widget.tenantContext.tenantName ??
-            'Scholify');
+    // identity. For tenants, the Scholify wordmark stays left and the
+    // tenant name is centered (see centeredTenantName below).
 
     Widget leadingLogo;
     if (logoBase64 != null && logoBase64.isNotEmpty) {
@@ -805,36 +801,36 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
     }
 
     // Stylish Scholify wordmark: two-tone with tight tracking.
-    // Regular tenants keep their plain school name.
-    final Widget titleWidget;
-    if (widget.tenantContext.isSuperAdmin) {
-      titleWidget = RichText(
-        text: TextSpan(
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
-            height: 1.0,
-          ),
-          children: [
-            const TextSpan(
-              text: 'Scholi',
-              style: TextStyle(color: Colors.white),
-            ),
-            TextSpan(
-              text: 'fy',
-              style:
-                  TextStyle(color: ScholifyColors.achievementAmber),
-            ),
-          ],
+    // Always shown on the left; tenant name is centered for non-superadmins.
+    final Widget logoWidget = RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+          height: 1.0,
         ),
-      );
-    } else {
-      titleWidget = Text(
-        displayName,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      );
-    }
+        children: [
+          const TextSpan(
+            text: 'Scholi',
+            style: TextStyle(color: Colors.white),
+          ),
+          TextSpan(
+            text: 'fy',
+            style: TextStyle(color: ScholifyColors.achievementAmber),
+          ),
+        ],
+      ),
+    );
+
+    // Centered tenant name for non-superadmin users.
+    final String? centeredTenantName = widget.tenantContext.isSuperAdmin
+        ? null
+        : (widget.tenantContext.brandingDisplayName ??
+            widget.tenantContext.tenantName);
+
+    // Title row: logo left. Tenant name is centered via flexibleSpace below.
+    final Widget titleWidget = logoWidget;
 
     return AppBar(
       leading: Padding(
@@ -843,6 +839,28 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       ),
       title: titleWidget,
       centerTitle: false,
+      // Centered tenant name overlay for non-superadmin users.
+      flexibleSpace: (centeredTenantName != null &&
+              centeredTenantName.isNotEmpty)
+          ? SafeArea(
+              child: Center(
+                child: Padding(
+                  // Offset for the leading logo + actions so text is truly centered.
+                  padding: const EdgeInsets.symmetric(horizontal: 120),
+                  child: Text(
+                    centeredTenantName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            )
+          : null,
       actions: [
         // Dark mode toggle
         ValueListenableBuilder<ThemeMode>(

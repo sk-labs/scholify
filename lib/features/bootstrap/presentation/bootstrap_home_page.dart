@@ -125,46 +125,58 @@ class BootstrapHomePage extends StatelessWidget {
   }
 
   /// Action buttons for common workspace tasks.
+  /// Debug/superadmin tools (Set Demo Tenant, Queue Demo Job) are only
+  /// visible to superadmins. Regular tenant users see sync controls plus
+  /// their own actions (Plan Upgrade, Branding Settings).
   List<Widget> _buildActionButtons(BuildContext context) {
-    final buttons = <Widget>[
-      ElevatedButton.icon(
-        onPressed: () {
-          tenantContext.setTenant(
-            tenantId: 'school_demo',
-            tenantName: 'Demo School',
-            role: 'superadmin',
-            isSuperAdmin: true,
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Demo tenant applied.')),
-          );
-        },
-        icon: const Icon(Icons.business),
-        label: const Text('Set Demo Tenant'),
-      ),
-      ElevatedButton.icon(
-        onPressed: () async {
-          await syncEngine.enqueueOperation(
-            entityType: 'tenant_license',
-            entityId: DateTime.now().millisecondsSinceEpoch.toString(),
-            operation: 'upsert',
-            payload: jsonEncode({
-              'tenantId': tenantContext.tenantId ?? 'school_demo',
-              'plan': 'professional',
-              'updatedAt': DateTime.now().toIso8601String(),
-            }),
-          );
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Demo sync operation queued.'),
-              ),
+    final buttons = <Widget>[];
+
+    // Superadmin-only debug tools.
+    if (tenantContext.isSuperAdmin) {
+      buttons.addAll([
+        ElevatedButton.icon(
+          onPressed: () {
+            tenantContext.setTenant(
+              tenantId: 'school_demo',
+              tenantName: 'Demo School',
+              role: 'superadmin',
+              isSuperAdmin: true,
             );
-          }
-        },
-        icon: const Icon(Icons.playlist_add),
-        label: const Text('Queue Demo Job'),
-      ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Demo tenant applied.')),
+            );
+          },
+          icon: const Icon(Icons.business),
+          label: const Text('Set Demo Tenant'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () async {
+            await syncEngine.enqueueOperation(
+              entityType: 'tenant_license',
+              entityId: DateTime.now().millisecondsSinceEpoch.toString(),
+              operation: 'upsert',
+              payload: jsonEncode({
+                'tenantId': tenantContext.tenantId ?? 'school_demo',
+                'plan': 'professional',
+                'updatedAt': DateTime.now().toIso8601String(),
+              }),
+            );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Demo sync operation queued.'),
+                ),
+              );
+            }
+          },
+          icon: const Icon(Icons.playlist_add),
+          label: const Text('Queue Demo Job'),
+        ),
+      ]);
+    }
+
+    // Sync controls: visible to everyone.
+    buttons.addAll([
       ElevatedButton.icon(
         onPressed: syncEngine.isBackgroundSyncEnabled
             ? syncEngine.stopBackgroundSync
@@ -185,10 +197,11 @@ class BootstrapHomePage extends StatelessWidget {
         icon: const Icon(Icons.sync),
         label: const Text('Run Manual Sync'),
       ),
-    ];
+    ]);
 
     if (!tenantContext.isSuperAdmin) {
-      buttons.insertAll(3, [
+      // Insert after the sync controls (which are always present).
+      buttons.insertAll(2, [
         ElevatedButton.icon(
           onPressed: () {
             Navigator.of(context).push(

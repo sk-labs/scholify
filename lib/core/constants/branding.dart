@@ -4,5 +4,9 @@ class AppBranding {
       'Desktop-first multi-tenant school platform';
 
   // Replace with your production PocketBase URL for Scholify.
-  static const String defaultPocketBaseUrl = 'https://vm-hms.lixcure.com';
+  // Overridable at build time: --dart-define=POCKETBASE_URL=http://localhost:8090
+  static const String defaultPocketBaseUrl = String.fromEnvironment(
+    'POCKETBASE_URL',
+    defaultValue: 'https://vm-hms.lixcure.com',
+  );
 }
