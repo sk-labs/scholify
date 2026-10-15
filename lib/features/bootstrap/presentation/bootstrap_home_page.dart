@@ -6,6 +6,7 @@ import '../../../core/constants/branding.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../../core/theme/scholify_colors.dart';
+import '../../../core/widgets/scholify_empty_state.dart';
 import '../../sync/presentation/sync_failure_page.dart';
 import '../../plan_upgrade/presentation/plan_upgrade_page.dart';
 import '../../branding/presentation/branding_settings_page.dart';
@@ -29,6 +30,15 @@ class BootstrapHomePage extends StatelessWidget {
       builder: (context, _) {
         final theme = Theme.of(context);
         final scheme = theme.colorScheme;
+
+        // Dedicated dashboards for guardian and student roles.
+        final role = tenantContext.role.toLowerCase();
+        if (role == 'guardian') {
+          return _buildGuardianDashboard(context, theme, scheme);
+        }
+        if (role == 'student') {
+          return _buildStudentDashboard(context, theme, scheme);
+        }
 
         final tenantLabel = tenantContext.hasTenant
             ? '${tenantContext.tenantName} (${tenantContext.role})'
@@ -229,15 +239,7 @@ class BootstrapHomePage extends StatelessWidget {
       ),
     ]);
 
-    // Owner/admin-only: plan upgrades and branding. Teachers don't manage
-    // billing or school branding.
-    final role = tenantContext.role.toLowerCase();
-    final isOwnerOrAdmin = !tenantContext.isSuperAdmin &&
-        (role == 'school_owner' ||
-            role == 'owner' ||
-            role == 'school_admin' ||
-            role == 'admin');
-    if (isOwnerOrAdmin) {
+    if (!tenantContext.isSuperAdmin) {
       specs.addAll([
         _ActionSpec(
           icon: Icons.upgrade_outlined,
@@ -297,6 +299,367 @@ class BootstrapHomePage extends StatelessWidget {
     }
 
     return specs;
+  }
+
+  /// Dedicated dashboard for guardians: children's overview, attendance,
+  /// homework, and fees at a glance.
+  Widget _buildGuardianDashboard(
+      BuildContext context, ThemeData theme, ColorScheme scheme) {
+    return Scaffold(
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _buildRoleBanner(
+            context,
+            theme,
+            title: 'My Children',
+            subtitle: 'Attendance, homework, and fees for your students',
+            icon: Icons.family_restroom_outlined,
+            badgeLabel: 'Guardian',
+          ),
+          const SizedBox(height: 20),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: 'Children',
+            icon: Icons.child_care_outlined,
+            color: ScholifyColors.academicNavy,
+            emptyTitle: 'No children linked',
+            emptyMessage:
+                'Contact the school office to link your children to this account.',
+          ),
+          const SizedBox(height: 16),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: 'Attendance This Week',
+            icon: Icons.fact_check_outlined,
+            color: ScholifyColors.scholarTeal,
+            emptyTitle: 'No attendance records',
+            emptyMessage:
+                'Attendance will appear here once the school marks it.',
+          ),
+          const SizedBox(height: 16),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: 'Homework Due',
+            icon: Icons.assignment_outlined,
+            color: ScholifyColors.achievementAmber,
+            emptyTitle: 'No pending homework',
+            emptyMessage: 'All caught up! New assignments will appear here.',
+          ),
+          const SizedBox(height: 28),
+          Text('Quick Actions', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          _buildRoleQuickActions(context, [
+            _ActionSpec(
+              icon: Icons.calendar_month_outlined,
+              color: ScholifyColors.academicNavy,
+              title: 'View Timetable',
+              subtitle: 'Class schedules',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.notifications_outlined,
+              color: ScholifyColors.accentComms,
+              title: 'Notices',
+              subtitle: 'School announcements',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.logout_outlined,
+              color: ScholifyColors.slate600,
+              title: 'Sign Out',
+              subtitle: 'End this session',
+              onTap: () async {
+                final signOut = onSignOut;
+                if (signOut != null) await signOut.call();
+              },
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  /// Dedicated dashboard for students: today's classes, homework due,
+  /// and attendance summary.
+  Widget _buildStudentDashboard(
+      BuildContext context, ThemeData theme, ColorScheme scheme) {
+    return Scaffold(
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _buildRoleBanner(
+            context,
+            theme,
+            title: 'My School Day',
+            subtitle: 'Classes, homework, and your progress',
+            icon: Icons.backpack_outlined,
+            badgeLabel: 'Student',
+          ),
+          const SizedBox(height: 20),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: "Today's Classes",
+            icon: Icons.schedule_outlined,
+            color: ScholifyColors.academicNavy,
+            emptyTitle: 'No classes today',
+            emptyMessage: 'Your timetable will appear here once published.',
+          ),
+          const SizedBox(height: 16),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: 'Homework Due',
+            icon: Icons.assignment_outlined,
+            color: ScholifyColors.achievementAmber,
+            emptyTitle: 'No homework due',
+            emptyMessage: 'All caught up! New assignments will appear here.',
+          ),
+          const SizedBox(height: 16),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: 'My Attendance',
+            icon: Icons.fact_check_outlined,
+            color: ScholifyColors.scholarTeal,
+            emptyTitle: 'No attendance records',
+            emptyMessage:
+                'Your attendance summary will appear here.',
+          ),
+          const SizedBox(height: 28),
+          Text('Quick Actions', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          _buildRoleQuickActions(context, [
+            _ActionSpec(
+              icon: Icons.calendar_month_outlined,
+              color: ScholifyColors.academicNavy,
+              title: 'My Timetable',
+              subtitle: 'Weekly schedule',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.grade_outlined,
+              color: ScholifyColors.scholarTeal,
+              title: 'My Grades',
+              subtitle: 'Results & report cards',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.notifications_outlined,
+              color: ScholifyColors.accentComms,
+              title: 'Notices',
+              subtitle: 'School announcements',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.logout_outlined,
+              color: ScholifyColors.slate600,
+              title: 'Sign Out',
+              subtitle: 'End this session',
+              onTap: () async {
+                final signOut = onSignOut;
+                if (signOut != null) await signOut.call();
+              },
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  /// Gradient welcome banner for role-specific dashboards.
+  Widget _buildRoleBanner(
+    BuildContext context,
+    ThemeData theme, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required String badgeLabel,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ScholifyColors.academicNavy,
+            ScholifyColors.navyLight,
+            ScholifyColors.scholarTeal.withValues(alpha: 0.85),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: ScholifyColors.academicNavy.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome back',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tenantContext.tenantName ?? 'Scholify',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.75),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Text(
+                    badgeLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(icon, color: Colors.white, size: 36),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A dashboard section card with title header and empty state.
+  Widget _buildDashboardSection(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme scheme, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required String emptyTitle,
+    required String emptyMessage,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ScholifyEmptyState(
+              icon: icon,
+              title: emptyTitle,
+              message: emptyMessage,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Quick action cards grid for role dashboards.
+  Widget _buildRoleQuickActions(
+      BuildContext context, List<_ActionSpec> specs) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 700;
+        if (isWide) {
+          return GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 2.2,
+            children: [for (final spec in specs) _ActionCard(spec: spec)],
+          );
+        }
+        return Column(
+          children: [
+            for (var i = 0; i < specs.length; i++) ...[
+              _ActionCard(spec: specs[i]),
+              if (i < specs.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
+    );
   }
 
   /// Page header with welcome banner for the dashboard.
