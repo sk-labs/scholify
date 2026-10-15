@@ -144,15 +144,33 @@ class ModuleAccessPolicy {
       }
     }
 
-    // Role-based filtering: guardians and students see a minimal sidebar.
     final normalizedRole = (role ?? '').toLowerCase();
-    if (normalizedRole == 'guardian' || normalizedRole == 'student') {
-      const allowedForFamilies = {
+    if (normalizedRole == 'guardian') {
+      const allowedForGuardian = {
+        ScholifyModuleFeature.attendance,
+        ScholifyModuleFeature.homework,
+        ScholifyModuleFeature.timetable,
+        ScholifyModuleFeature.fees,
+        ScholifyModuleFeature.exams,
         ScholifyModuleFeature.notices,
         ScholifyModuleFeature.notifications,
       };
       for (final feature in resolved.keys.toList()) {
-        if (!allowedForFamilies.contains(feature)) {
+        if (!allowedForGuardian.contains(feature)) {
+          resolved[feature] = false;
+        }
+      }
+    } else if (normalizedRole == 'student') {
+      const allowedForStudent = {
+        ScholifyModuleFeature.attendance,
+        ScholifyModuleFeature.homework,
+        ScholifyModuleFeature.timetable,
+        ScholifyModuleFeature.exams,
+        ScholifyModuleFeature.notices,
+        ScholifyModuleFeature.notifications,
+      };
+      for (final feature in resolved.keys.toList()) {
+        if (!allowedForStudent.contains(feature)) {
           resolved[feature] = false;
         }
       }
