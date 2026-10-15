@@ -61,6 +61,7 @@ class ScholifyShellPage extends StatefulWidget {
 
 class _ScholifyShellPageState extends State<ScholifyShellPage> {
   int _selectedIndex = 0;
+  bool _showingProfile = false;
   late final ImpersonationService _impersonationService;
   final TextEditingController _navSearchController = TextEditingController();
   String _navSearchQuery = '';
@@ -627,18 +628,6 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           ),
         section: _ShellSection.academics
       ),
-      // Profile page for guardians and students.
-      if (_isFamilyRole())
-        _ShellDestination(
-          label: 'My Profile',
-          icon: Icons.person_outlined,
-        color: ScholifyColors.academicNavy,
-          page: GuardianProfilePage(
-            tenantContext: widget.tenantContext,
-            syncEngine: widget.syncEngine,
-          ),
-        section: _ShellSection.foundation
-      ),
     ];
 
     final maxIndex = destinations.length - 1;
@@ -669,7 +658,14 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                 ImpersonationBanner(
                   impersonationService: _impersonationService,
                 ),
-                Expanded(child: destinations[activeIndex].page),
+                Expanded(
+                  child: _showingProfile && _isFamilyRole()
+                      ? GuardianProfilePage(
+                          tenantContext: widget.tenantContext,
+                          syncEngine: widget.syncEngine,
+                        )
+                      : destinations[activeIndex].page,
+                ),
               ],
             ),
           );
@@ -692,7 +688,14 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                           context, destinations, activeIndex),
                     ),
                     const VerticalDivider(width: 1),
-                    Expanded(child: destinations[activeIndex].page),
+                    Expanded(
+                      child: _showingProfile && _isFamilyRole()
+                          ? GuardianProfilePage(
+                              tenantContext: widget.tenantContext,
+                              syncEngine: widget.syncEngine,
+                            )
+                          : destinations[activeIndex].page,
+                    ),
                   ],
                 ),
               ),
@@ -733,6 +736,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       final fullIndex = destinations.indexOf(target);
       setState(() {
         _selectedIndex = fullIndex;
+        _showingProfile = false;
       });
       if (inDrawer) Navigator.of(context).pop();
     }
@@ -797,6 +801,18 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     ],
                   ),
           ),
+          // Bottom-pinned Profile for guardians/students.
+          if (_isFamilyRole())
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+              child: Column(
+                children: [
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                  _buildProfileTile(context, inDrawer),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -944,6 +960,76 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     height: 24,
                     decoration: BoxDecoration(
                       color: destination.color,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Bottom-pinned Profile tile for guardians/students.
+  Widget _buildProfileTile(BuildContext context, bool inDrawer) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final selected = _showingProfile;
+    const color = ScholifyColors.academicNavy;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      child: Material(
+        color: selected
+            ? scheme.primary.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            setState(() {
+              _showingProfile = true;
+            });
+            if (inDrawer) Navigator.of(context).pop();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? color
+                        : color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.person_outlined,
+                    size: 20,
+                    color: selected ? Colors.white : color,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'My Profile',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: selected ? color : scheme.onSurface,
+                      fontWeight: selected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (selected)
+                  Container(
+                    width: 4,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: color,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
