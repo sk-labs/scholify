@@ -14,6 +14,7 @@ import '../core/theme/theme_controller.dart';
 import '../core/theme/scholify_colors.dart';
 import '../features/impersonation/presentation/impersonation_banner.dart';
 import '../features/attendance/presentation/attendance_overview_page.dart';
+import '../features/attendance/presentation/guardian_attendance_page.dart';
 import '../features/bootstrap/presentation/bootstrap_home_page.dart';
 import '../features/curriculum/presentation/curriculum_page.dart';
 import '../features/documents/presentation/document_center_page.dart';
@@ -178,6 +179,22 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
     return null;
   }
 
+  /// Returns the attendance page appropriate for the current user's role.
+  /// Guardians get analytics; teachers/staff get the marking interface.
+  Widget _attendancePageForRole() {
+    final role = widget.tenantContext.role.toLowerCase();
+    if (role == 'guardian' || role == 'student') {
+      return GuardianAttendancePage(
+        tenantContext: widget.tenantContext,
+        syncEngine: widget.syncEngine,
+      );
+    }
+    return AttendanceOverviewPage(
+      tenantContext: widget.tenantContext,
+      syncEngine: widget.syncEngine,
+    );
+  }
+
   Widget _buildShellForAccess(Map<String, bool> access) {
     final destinations = <_ShellDestination>[
       _ShellDestination(
@@ -190,8 +207,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           onSignOut: widget.onSignOut,
         ),
         section: _ShellSection.foundation
-      ),
-      if (widget.tenantContext.isSuperAdmin)
+      ),      if (widget.tenantContext.isSuperAdmin)
         _ShellDestination(
           label: 'Superadmin',
           icon: Icons.admin_panel_settings,
@@ -301,10 +317,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           label: 'Attendance',
           icon: Icons.fact_check,
         color: ScholifyColors.success,
-          page: AttendanceOverviewPage(
-            tenantContext: widget.tenantContext,
-            syncEngine: widget.syncEngine,
-          ),
+          page: _attendancePageForRole(),
         section: _ShellSection.academics
       ),
       if (access[ScholifyModuleFeature.exams] ?? false)
