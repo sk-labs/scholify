@@ -156,6 +156,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
               planCode: tenantLicense?.planCode,
               overrides: overrides,
               isSuperAdmin: false,
+              role: widget.tenantContext.role,
             );
 
             return _buildShellForAccess(access);

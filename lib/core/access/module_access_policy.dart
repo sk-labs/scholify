@@ -131,6 +131,7 @@ class ModuleAccessPolicy {
     required String? planCode,
     required Map<String, bool> overrides,
     required bool isSuperAdmin,
+    String? role,
   }) {
     if (isSuperAdmin) {
       return {for (final feature in ScholifyModuleFeature.all) feature: true};
@@ -142,6 +143,21 @@ class ModuleAccessPolicy {
         resolved[entry.key] = entry.value;
       }
     }
+
+    // Role-based filtering: guardians and students see a minimal sidebar.
+    final normalizedRole = (role ?? '').toLowerCase();
+    if (normalizedRole == 'guardian' || normalizedRole == 'student') {
+      const allowedForFamilies = {
+        ScholifyModuleFeature.notices,
+        ScholifyModuleFeature.notifications,
+      };
+      for (final feature in resolved.keys.toList()) {
+        if (!allowedForFamilies.contains(feature)) {
+          resolved[feature] = false;
+        }
+      }
+    }
+
     return resolved;
   }
 }
