@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -26,7 +27,7 @@ class GuardianHomeworkPage extends StatefulWidget {
 
 class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
   late final HomeworkRepository _repository;
-  String _filter = 'all'; // all | due_soon | overdue
+  String _filter = 'all'; // all | due_soon | overdue | performance
 
   @override
   void initState() {
@@ -52,7 +53,10 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
           const SizedBox(height: 20),
           _buildFilterChips(theme),
           const SizedBox(height: 16),
-          StreamBuilder<List<HomeworkAssignmentEntry>>(
+          if (_filter == 'performance')
+            _buildPerformanceView(theme, isGuardian)
+          else
+            StreamBuilder<List<HomeworkAssignmentEntry>>(
             stream: _repository.watchAssignments(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -115,6 +119,392 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
       default:
         return items;
     }
+  }
+
+  /// Performance view: charts showing homework completion stats.
+  Widget _buildPerformanceView(ThemeData theme, bool isGuardian) {
+    // For guardians, show the first linked child's data.
+    // The student ID comes from the student directory.
+    return StreamBuilder<List<StudentDirectoryEntry>>(
+      stream: widget.syncEngine.database.watchActiveStudentProfiles(
+        tenantId: widget.tenantContext.tenantId ?? '',
+      ),
+      builder: (context, studentSnapshot) {
+        final students = studentSnapshot.data ?? const [];
+        if (students.isEmpty) {
+          return ScholifyEmptyState(
+            icon: Icons.analytics_outlined,
+            title: 'No performance data',
+            message: isGuardian
+                ? 'Link a child to see homework performance.'
+                : 'No homework data yet.',
+          );
+        }
+        final studentId = students.first.id;
+        return StreamBuilder<List<HomeworkAssignmentEntry>>(
+          stream: _repository.watchAssignments(),
+          builder: (context, assignSnapshot) {
+            final assignments = (assignSnapshot.data ?? const [])
+                .where((a) => a.isActive && a.isPublished)
+                .toList();
+            return StreamBuilder<List<HomeworkSubmissionEntry>>(
+              stream: _repository.watchStudentSubmissions(
+                studentId: studentId,
+              ),
+              builder: (context, subSnapshot) {
+                final submissions = subSnapshot.data ?? const [];
+                return _buildPerformanceCharts(
+                  theme,
+                  assignments,
+                  submissions,
+                  isGuardian,
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPerformanceCharts(
+    ThemeData theme,
+    List<HomeworkAssignmentEntry> assignments,
+    List<HomeworkSubmissionEntry> submissions,
+    bool isGuardian,
+  ) {
+    final scheme = theme.colorScheme;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Submitted assignment IDs.
+    final submittedIds =
+        submissions.map((s) => s.assignmentId).toSet();
+
+    int completed = 0;
+    int pending = 0;
+    int overdue = 0;
+    final subjectStats = <String, Map<String, int>>{};
+
+    for (final a in assignments) {
+      final subject = a.subjectName ?? 'General';
+      subjectStats.putIfAbsent(
+          subject, () => {'total': 0, 'done': 0});
+      subjectStats[subject]!['total'] =
+          subjectStats[subject]!['total']! + 1;
+
+      if (submittedIds.contains(a.id)) {
+        completed++;
+        subjectStats[subject]!['done'] =
+            subjectStats[subject]!['done']! + 1;
+      } else if (a.dueDate != null) {
+        final d = DateTime(
+            a.dueDate!.year, a.dueDate!.month, a.dueDate!.day);
+        if (d.isBefore(today)) {
+          overdue++;
+        } else {
+          pending++;
+        }
+      } else {
+        pending++;
+      }
+    }
+
+    final total = assignments.length;
+    final completionRate =
+        total == 0 ? 0.0 : (completed / total) * 100;
+
+    // Average grade from graded submissions.
+    final grades = submissions
+        .where((s) => s.gradeScore != null)
+        .map((s) => s.gradeScore!)
+        .toList();
+    final avgGrade = grades.isEmpty
+        ? null
+        : grades.reduce((a, b) => a + b) / grades.length;
+
+    return Column(
+      children: [
+        _buildPerfStatCards(
+            theme, completionRate, completed, pending, overdue, avgGrade),
+        const SizedBox(height: 20),
+        _buildCompletionDonut(
+            theme, scheme, completed, pending, overdue),
+        const SizedBox(height: 20),
+        _buildSubjectBars(theme, scheme, subjectStats),
+      ],
+    );
+  }
+
+  Widget _buildPerfStatCards(
+    ThemeData theme,
+    double completionRate,
+    int completed,
+    int pending,
+    int overdue,
+    double? avgGrade,
+  ) {
+    final cards = [
+      _PerfStatCard(
+        label: 'Completion Rate',
+        value: '${completionRate.toStringAsFixed(0)}%',
+        icon: Icons.percent_outlined,
+        color: ScholifyColors.scholarTeal,
+      ),
+      _PerfStatCard(
+        label: 'Completed',
+        value: '$completed',
+        icon: Icons.check_circle_outlined,
+        color: ScholifyColors.success,
+      ),
+      _PerfStatCard(
+        label: 'Pending',
+        value: '$pending',
+        icon: Icons.schedule_outlined,
+        color: ScholifyColors.achievementAmber,
+      ),
+      _PerfStatCard(
+        label: 'Overdue',
+        value: '$overdue',
+        icon: Icons.warning_amber_outlined,
+        color: ScholifyColors.error,
+      ),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
+        return GridView.count(
+          crossAxisCount: isWide ? 4 : 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.7,
+          children: cards,
+        );
+      },
+    );
+  }
+
+  Widget _buildCompletionDonut(
+    ThemeData theme,
+    ColorScheme scheme,
+    int completed,
+    int pending,
+    int overdue,
+  ) {
+    final total = completed + pending + overdue;
+    if (total == 0) {
+      return ScholifyEmptyState(
+        icon: Icons.pie_chart_outline,
+        title: 'No homework yet',
+        message: 'Completion stats will appear here.',
+      );
+    }
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Completion Breakdown',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sectionsSpace: 2,
+                  centerSpaceRadius: 50,
+                  sections: [
+                    PieChartSectionData(
+                      value: completed.toDouble(),
+                      title: '$completed',
+                      color: ScholifyColors.success,
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    PieChartSectionData(
+                      value: pending.toDouble(),
+                      title: pending > 0 ? '$pending' : '',
+                      color: ScholifyColors.achievementAmber,
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    PieChartSectionData(
+                      value: overdue.toDouble(),
+                      title: overdue > 0 ? '$overdue' : '',
+                      color: ScholifyColors.error,
+                      radius: 60,
+                      titleStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _PerfLegend(
+                    color: ScholifyColors.success,
+                    label: 'Completed'),
+                const SizedBox(width: 16),
+                _PerfLegend(
+                    color: ScholifyColors.achievementAmber,
+                    label: 'Pending'),
+                const SizedBox(width: 16),
+                _PerfLegend(
+                    color: ScholifyColors.error,
+                    label: 'Overdue'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubjectBars(
+    ThemeData theme,
+    ColorScheme scheme,
+    Map<String, Map<String, int>> subjectStats,
+  ) {
+    if (subjectStats.isEmpty) return const SizedBox.shrink();
+    final subjects = subjectStats.keys.toList();
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('By Subject',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(
+              'Completed vs total assignments per subject',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 180,
+              child: BarChart(
+                BarChartData(
+                  maxY: (subjectStats.values
+                              .map((s) => s['total']!)
+                              .reduce((a, b) =>
+                                  a > b ? a : b)
+                              .toDouble()) +
+                      1,
+                  barGroups: [
+                    for (var i = 0;
+                        i < subjects.length;
+                        i++)
+                      BarChartGroupData(
+                        x: i,
+                        barRods: [
+                          BarChartRodData(
+                            toY: subjectStats[subjects[i]]![
+                                    'done']!
+                                .toDouble(),
+                            color: ScholifyColors.scholarTeal,
+                            width: 18,
+                            borderRadius:
+                                BorderRadius.circular(4),
+                          ),
+                          BarChartRodData(
+                            toY: (subjectStats[subjects[i]]![
+                                            'total']! -
+                                        subjectStats[subjects[i]]![
+                                            'done']!)
+                                    .toDouble(),
+                            color: scheme.outlineVariant,
+                            width: 18,
+                            borderRadius:
+                                BorderRadius.circular(4),
+                          ),
+                        ],
+                      ),
+                  ],
+                  titlesData: FlTitlesData(
+                    leftTitles: const AxisTitles(
+                        sideTitles:
+                            SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles:
+                            SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles:
+                            SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (v, _) {
+                          final idx = v.toInt();
+                          if (idx < 0 ||
+                              idx >= subjects.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final name = subjects[idx];
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(top: 4),
+                            child: Text(
+                              name.length > 8
+                                  ? '${name.substring(0, 8)}…'
+                                  : name,
+                              style:
+                                  theme.textTheme.labelSmall,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  gridData: const FlGridData(show: false),
+                  borderData: FlBorderData(show: false),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _PerfLegend(
+                    color: ScholifyColors.scholarTeal,
+                    label: 'Completed'),
+                const SizedBox(width: 16),
+                _PerfLegend(
+                    color: scheme.outlineVariant,
+                    label: 'Remaining'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildHeader(ThemeData theme, bool isGuardian) {
@@ -192,6 +582,7 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
       ('all', 'All'),
       ('due_soon', 'Due Soon'),
       ('overdue', 'Overdue'),
+      ('performance', 'Performance'),
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -332,6 +723,83 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PerfStatCard extends StatelessWidget {
+  const _PerfStatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+            color: theme.colorScheme.outlineVariant
+                .withValues(alpha: 0.6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 17),
+            ),
+            const SizedBox(height: 6),
+            Text(value,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800)),
+            Text(label,
+                style: theme.textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PerfLegend extends StatelessWidget {
+  const _PerfLegend({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration:
+              BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
     );
   }
 }

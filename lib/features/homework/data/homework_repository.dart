@@ -119,6 +119,15 @@ class HomeworkRepository {
     );
   }
 
+  Stream<List<HomeworkSubmissionEntry>> watchStudentSubmissions({
+    required String studentId,
+  }) {
+    return database.watchStudentSubmissions(
+      tenantId: _resolveTenantId(),
+      studentId: studentId,
+    );
+  }
+
   Future<void> submitHomework({
     required String assignmentId,
     required String studentId,
