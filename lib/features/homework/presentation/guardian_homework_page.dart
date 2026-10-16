@@ -228,8 +228,11 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
         _buildPerfStatCards(
             theme, completionRate, completed, pending, overdue, avgGrade),
         const SizedBox(height: 20),
-        _buildCompletionDonut(
-            theme, scheme, completed, pending, overdue),
+        _buildCompletionGauge(
+            theme, scheme, completionRate, completed, pending, overdue),
+        const SizedBox(height: 20),
+        _buildWeeklyStrip(
+            theme, scheme, assignments, submittedIds),
         const SizedBox(height: 20),
         _buildSubjectBars(theme, scheme, subjectStats),
       ],
@@ -286,9 +289,12 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
     );
   }
 
-  Widget _buildCompletionDonut(
+  /// Radial completion gauge — visually distinct from the donut
+  /// used on the attendance page.
+  Widget _buildCompletionGauge(
     ThemeData theme,
     ColorScheme scheme,
+    double completionRate,
     int completed,
     int pending,
     int overdue,
@@ -296,7 +302,7 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
     final total = completed + pending + overdue;
     if (total == 0) {
       return ScholifyEmptyState(
-        icon: Icons.pie_chart_outline,
+        icon: Icons.donut_large_outlined,
         title: 'No homework yet',
         message: 'Completion stats will appear here.',
       );
@@ -313,63 +319,69 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Completion Breakdown',
+            Text('Completion Gauge',
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(
+              'Share of homework finished on time',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: PieChart(
-                PieChartData(
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 50,
-                  sections: [
-                    PieChartSectionData(
-                      value: completed.toDouble(),
-                      title: '$completed',
-                      color: ScholifyColors.success,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
+            Center(
+              child: SizedBox(
+                width: 200,
+                height: 200,
+                child: CustomPaint(
+                  painter: _GaugePainter(
+                    progress: completionRate / 100,
+                    trackColor:
+                        scheme.outlineVariant.withValues(alpha: 0.5),
+                    progressColor: ScholifyColors.scholarTeal,
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${completionRate.toStringAsFixed(0)}%',
+                          style: theme.textTheme.headlineLarge
+                              ?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: ScholifyColors.scholarTeal,
+                          ),
+                        ),
+                        Text(
+                          'complete',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                    PieChartSectionData(
-                      value: pending.toDouble(),
-                      title: pending > 0 ? '$pending' : '',
-                      color: ScholifyColors.achievementAmber,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    PieChartSectionData(
-                      value: overdue.toDouble(),
-                      title: overdue > 0 ? '$overdue' : '',
-                      color: ScholifyColors.error,
-                      radius: 60,
-                      titleStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _PerfLegend(
-                    color: ScholifyColors.success,
-                    label: 'Completed'),
-                const SizedBox(width: 16),
-                _PerfLegend(
-                    color: ScholifyColors.achievementAmber,
-                    label: 'Pending'),
-                const SizedBox(width: 16),
-                _PerfLegend(
-                    color: ScholifyColors.error,
-                    label: 'Overdue'),
+                _GaugeStat(
+                    value: '$completed',
+                    label: 'Done',
+                    color: ScholifyColors.success),
+                _GaugeStat(
+                    value: '$pending',
+                    label: 'Pending',
+                    color: ScholifyColors.achievementAmber),
+                _GaugeStat(
+                    value: '$overdue',
+                    label: 'Overdue',
+                    color: ScholifyColors.error),
               ],
             ),
           ],
@@ -377,6 +389,137 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
       ),
     );
   }
+
+  /// Segmented weekly activity strip — a different rhythm from the
+  /// bar chart below it.
+  Widget _buildWeeklyStrip(
+    ThemeData theme,
+    ColorScheme scheme,
+    List<HomeworkAssignmentEntry> assignments,
+    Set<String> submittedIds,
+  ) {
+    final now = DateTime.now();
+    // Last 4 weeks, oldest first.
+    final weeks = List.generate(4, (i) {
+      final end =
+          DateTime(now.year, now.month, now.day)
+              .subtract(Duration(days: now.weekday % 7 + i * 7));
+      final start = end.subtract(const Duration(days: 6));
+      return (start, end);
+    }).reversed.toList();
+
+    int maxCount = 1;
+    final counts = <int>[];
+    final doneCounts = <int>[];
+    for (final (start, end) in weeks) {
+      int total = 0;
+      int done = 0;
+      for (final a in assignments) {
+        final d = a.assignedOn ?? a.dueDate;
+        if (d == null) continue;
+        final day = DateTime(d.year, d.month, d.day);
+        if (!day.isBefore(start) && !day.isAfter(end)) {
+          total++;
+          if (submittedIds.contains(a.id)) done++;
+        }
+      }
+      counts.add(total);
+      doneCounts.add(done);
+      if (total > maxCount) maxCount = total;
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Weekly Activity',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text(
+              'Assignments given vs finished, last 4 weeks',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var i = 0; i < weeks.length; i++)
+                  Expanded(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: 110,
+                            child: Row(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.end,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: [
+                                _StripBar(
+                                  fraction: counts[i] / maxCount,
+                                  color: scheme.outlineVariant,
+                                ),
+                                const SizedBox(width: 6),
+                                _StripBar(
+                                  fraction:
+                                      doneCounts[i] / maxCount,
+                                  color:
+                                      ScholifyColors.scholarTeal,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'W${4 - i}',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                          Text(
+                            '${doneCounts[i]}/${counts[i]}',
+                            style: theme.textTheme.labelSmall
+                                ?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _PerfLegend(
+                    color: scheme.outlineVariant,
+                    label: 'Given'),
+                const SizedBox(width: 16),
+                _PerfLegend(
+                    color: ScholifyColors.scholarTeal,
+                    label: 'Finished'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildSubjectBars(
     ThemeData theme,
@@ -800,6 +943,107 @@ class _PerfLegend extends StatelessWidget {
         const SizedBox(width: 6),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
+    );
+  }
+}
+
+/// Radial progress ring painter for the completion gauge.
+class _GaugePainter extends CustomPainter {
+  _GaugePainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 12;
+    const strokeWidth = 18.0;
+
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    // Full track circle.
+    canvas.drawCircle(center, radius, trackPaint);
+
+    // Progress arc, starting at top (-90 degrees).
+    final sweep = (progress.clamp(0.0, 1.0)) * 3.141592653589793 * 2;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.141592653589793 / 2,
+      sweep,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GaugePainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.progressColor != progressColor;
+  }
+}
+
+class _GaugeStat extends StatelessWidget {
+  const _GaugeStat({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        Text(label, style: theme.textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+/// Single vertical bar in the weekly strip.
+class _StripBar extends StatelessWidget {
+  const _StripBar({required this.fraction, required this.color});
+
+  final double fraction;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 22,
+      height: (fraction.clamp(0.0, 1.0) * 100).clamp(6.0, 100.0),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(6),
+      ),
     );
   }
 }
