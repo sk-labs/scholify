@@ -633,12 +633,22 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
 
     // For guardians/students, Foundation sits last in the sidebar,
     // just above the pinned My Profile tile — but stays the landing page.
+    // It's moved to the end of the list and into the Operations section
+    // (the last grouped section before the pinned profile).
     if (_isFamilyRole()) {
       final foundationIdx =
           destinations.indexWhere((d) => d.label == 'Foundation');
       if (foundationIdx != -1) {
         final foundation = destinations.removeAt(foundationIdx);
-        destinations.add(foundation);
+        destinations.add(
+          _ShellDestination(
+            label: foundation.label,
+            icon: foundation.icon,
+            color: foundation.color,
+            page: foundation.page,
+            section: _ShellSection.operations,
+          ),
+        );
         if (!_familyLandingApplied) {
           _familyLandingApplied = true;
           _selectedIndex = destinations.length - 1;
