@@ -62,6 +62,7 @@ class ScholifyShellPage extends StatefulWidget {
 class _ScholifyShellPageState extends State<ScholifyShellPage> {
   int _selectedIndex = 0;
   bool _showingProfile = false;
+  bool _familyLandingApplied = false;
   late final ImpersonationService _impersonationService;
   final TextEditingController _navSearchController = TextEditingController();
   String _navSearchQuery = '';
@@ -629,6 +630,21 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         section: _ShellSection.academics
       ),
     ];
+
+    // For guardians/students, Foundation sits last in the sidebar,
+    // just above the pinned My Profile tile — but stays the landing page.
+    if (_isFamilyRole()) {
+      final foundationIdx =
+          destinations.indexWhere((d) => d.label == 'Foundation');
+      if (foundationIdx != -1) {
+        final foundation = destinations.removeAt(foundationIdx);
+        destinations.add(foundation);
+        if (!_familyLandingApplied) {
+          _familyLandingApplied = true;
+          _selectedIndex = destinations.length - 1;
+        }
+      }
+    }
 
     final maxIndex = destinations.length - 1;
     final activeIndex = _selectedIndex > maxIndex ? maxIndex : _selectedIndex;
