@@ -310,6 +310,10 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
     return role == 'guardian' || role == 'student';
   }
 
+  bool _isTeacherRole() {
+    return widget.tenantContext.role.toLowerCase() == 'teacher';
+  }
+
   /// Returns the timetable page appropriate for the current user's role.
   Widget _timetablePageForRole() {
     final role = widget.tenantContext.role.toLowerCase();
@@ -631,11 +635,11 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       ),
     ];
 
-    // For guardians/students, Foundation sits last in the sidebar,
-    // just above the pinned My Profile tile — but stays the landing page.
-    // It's moved to the end of the list and into the Operations section
-    // (the last grouped section before the pinned profile).
-    if (_isFamilyRole()) {
+    // For guardians/students/teachers, Foundation sits last in the sidebar
+    // (just above the pinned My Profile tile for family roles) — but stays
+    // the landing page. It's moved to the end of the list and into the
+    // Operations section (the last grouped section).
+    if (_isFamilyRole() || _isTeacherRole()) {
       final foundationIdx =
           destinations.indexWhere((d) => d.label == 'Foundation');
       if (foundationIdx != -1) {
