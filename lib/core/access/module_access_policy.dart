@@ -175,12 +175,26 @@ class ModuleAccessPolicy {
         }
       }
     } else if (normalizedRole == 'teacher') {
-      // Teachers get their working modules but not the staff directory.
-      const deniedForTeacher = {
-        ScholifyModuleFeature.teachers,
+      // Teachers get their teaching workflow: classes, attendance, homework,
+      // grading, and student/guardian lookups. Management modules
+      // (staff directory, admissions, billing, operations) are excluded.
+      const allowedForTeacher = {
+        ScholifyModuleFeature.attendance,
+        ScholifyModuleFeature.homework,
+        ScholifyModuleFeature.timetable,
+        ScholifyModuleFeature.notices,
+        ScholifyModuleFeature.notifications,
+        ScholifyModuleFeature.students,
+        ScholifyModuleFeature.guardians,
+        ScholifyModuleFeature.exams,
+        ScholifyModuleFeature.liveClasses,
+        ScholifyModuleFeature.onlineLearning,
+        ScholifyModuleFeature.curriculum,
+        ScholifyModuleFeature.library,
+        ScholifyModuleFeature.studentBehaviour,
       };
       for (final feature in resolved.keys.toList()) {
-        if (deniedForTeacher.contains(feature)) {
+        if (!allowedForTeacher.contains(feature)) {
           resolved[feature] = false;
         }
       }
