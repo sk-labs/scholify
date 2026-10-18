@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/branding.dart';
+import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../../core/theme/scholify_colors.dart';
@@ -10,6 +11,8 @@ import '../../../core/widgets/scholify_empty_state.dart';
 import '../../sync/presentation/sync_failure_page.dart';
 import '../../plan_upgrade/presentation/plan_upgrade_page.dart';
 import '../../branding/presentation/branding_settings_page.dart';
+import '../../timetable/data/timetable_repository.dart';
+import '../../homework/data/homework_repository.dart';
 
 class BootstrapHomePage extends StatelessWidget {
   const BootstrapHomePage({
@@ -38,6 +41,9 @@ class BootstrapHomePage extends StatelessWidget {
         }
         if (role == 'student') {
           return _buildStudentDashboard(context, theme, scheme);
+        }
+        if (role == 'teacher') {
+          return _buildTeacherDashboard(context, theme, scheme);
         }
 
         final tenantLabel = tenantContext.hasTenant
@@ -475,6 +481,357 @@ class BootstrapHomePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Dedicated dashboard for teachers: today's classes, attendance to mark,
+  /// and homework awaiting review — the daily teaching workflow.
+  Widget _buildTeacherDashboard(
+      BuildContext context, ThemeData theme, ColorScheme scheme) {
+    final timetableRepo = TimetableRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
+    final homeworkRepo = HomeworkRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
+    final todayName = _weekdayName(DateTime.now().weekday);
+
+    return Scaffold(
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _buildRoleBanner(
+            context,
+            theme,
+            title: 'My Teaching Day',
+            subtitle: 'Classes, attendance, and homework to review',
+            icon: Icons.menu_book_outlined,
+            badgeLabel: 'Teacher',
+          ),
+          const SizedBox(height: 20),
+          _buildTeacherSectionShell(
+            context,
+            theme,
+            scheme,
+            title: "Today's Classes",
+            icon: Icons.schedule_outlined,
+            color: ScholifyColors.academicNavy,
+            child: StreamBuilder<List<TimetableSlotEntry>>(
+              stream: timetableRepo.watchDaySlots(todayName),
+              builder: (context, snapshot) {
+                final slots = (snapshot.data ?? const [])
+                    .where((s) => s.isActive)
+                    .toList()
+                  ..sort((a, b) =>
+                      a.periodIndex.compareTo(b.periodIndex));
+                if (slots.isEmpty) {
+                  return ScholifyEmptyState(
+                    icon: Icons.schedule_outlined,
+                    title: 'No classes today',
+                    message:
+                        'Your timetable for today will appear here once published.',
+                  );
+                }
+                return Column(
+                  children: [
+                    for (var i = 0; i < slots.length; i++) ...[
+                      _buildClassRow(theme, scheme, slots[i]),
+                      if (i < slots.length - 1)
+                        const SizedBox(height: 8),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildDashboardSection(
+            context,
+            theme,
+            scheme,
+            title: 'Attendance to Mark',
+            icon: Icons.fact_check_outlined,
+            color: ScholifyColors.scholarTeal,
+            emptyTitle: 'All caught up',
+            emptyMessage:
+                'Mark attendance from the Attendance page for today\u2019s classes.',
+          ),
+          const SizedBox(height: 16),
+          _buildTeacherSectionShell(
+            context,
+            theme,
+            scheme,
+            title: 'Homework to Review',
+            icon: Icons.rate_review_outlined,
+            color: ScholifyColors.achievementAmber,
+            child: StreamBuilder<List<HomeworkAssignmentEntry>>(
+              stream: homeworkRepo.watchAssignments(),
+              builder: (context, snapshot) {
+                final items = (snapshot.data ?? const [])
+                    .where((a) => a.isActive && a.isPublished)
+                    .toList();
+                if (items.isEmpty) {
+                  return ScholifyEmptyState(
+                    icon: Icons.rate_review_outlined,
+                    title: 'Nothing to review',
+                    message:
+                        'Student submissions awaiting your feedback will appear here.',
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${items.length} active assignment${items.length == 1 ? '' : 's'}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (var i = 0;
+                        i < items.length && i < 3;
+                        i++) ...[
+                      _buildAssignmentRow(theme, items[i]),
+                      if (i < 2 && i < items.length - 1)
+                        const SizedBox(height: 8),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 28),
+          Text('Quick Actions', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          _buildRoleQuickActions(context, [
+            _ActionSpec(
+              icon: Icons.fact_check_outlined,
+              color: ScholifyColors.scholarTeal,
+              title: 'Mark Attendance',
+              subtitle: "Today's classes",
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.add_task_outlined,
+              color: ScholifyColors.academicNavy,
+              title: 'New Homework',
+              subtitle: 'Create assignment',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.calendar_month_outlined,
+              color: ScholifyColors.academicNavy,
+              title: 'My Timetable',
+              subtitle: 'Weekly schedule',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.notifications_outlined,
+              color: ScholifyColors.accentComms,
+              title: 'Notices',
+              subtitle: 'School announcements',
+              onTap: () {},
+            ),
+            _ActionSpec(
+              icon: Icons.logout_outlined,
+              color: ScholifyColors.slate600,
+              title: 'Sign Out',
+              subtitle: 'End this session',
+              onTap: () async {
+                final signOut = onSignOut;
+                if (signOut != null) await signOut.call();
+              },
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  /// Section shell that takes a live child instead of an empty state.
+  Widget _buildTeacherSectionShell(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme scheme, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required Widget child,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Single class row for the teacher's today list.
+  Widget _buildClassRow(
+      ThemeData theme, ColorScheme scheme, TimetableSlotEntry slot) {
+    final time = [
+      if (slot.timeFrom != null) slot.timeFrom!,
+      if (slot.timeTo != null) slot.timeTo!,
+    ].join(' \u2013 ');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: ScholifyColors.academicNavy.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(
+                'P${slot.periodIndex + 1}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: ScholifyColors.academicNavy,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  slot.subjectName,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (time.isNotEmpty ||
+                    (slot.roomNo?.isNotEmpty ?? false))
+                  Text(
+                    [
+                      if (time.isNotEmpty) time,
+                      if (slot.roomNo?.isNotEmpty ?? false)
+                        'Room ${slot.roomNo}',
+                    ].join(' \u00b7 '),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (slot.classSection?.isNotEmpty ?? false)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color:
+                    ScholifyColors.scholarTeal.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                slot.classSection!,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: ScholifyColors.scholarTeal,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Single assignment row for the review list.
+  Widget _buildAssignmentRow(
+      ThemeData theme, HomeworkAssignmentEntry assignment) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.assignment_outlined,
+            color: ScholifyColors.achievementAmber,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              assignment.title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Maps DateTime weekday (1=Mon .. 7=Sun) to the timetable day names.
+  String _weekdayName(int weekday) {
+    const names = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    return names[(weekday - 1).clamp(0, 6)];
   }
 
   /// Gradient welcome banner for role-specific dashboards.
