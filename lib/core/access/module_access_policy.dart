@@ -174,6 +174,16 @@ class ModuleAccessPolicy {
           resolved[feature] = false;
         }
       }
+    } else if (normalizedRole == 'teacher') {
+      // Teachers get their working modules but not the staff directory.
+      const deniedForTeacher = {
+        ScholifyModuleFeature.teachers,
+      };
+      for (final feature in resolved.keys.toList()) {
+        if (deniedForTeacher.contains(feature)) {
+          resolved[feature] = false;
+        }
+      }
     }
 
     return resolved;
