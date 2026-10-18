@@ -53,10 +53,10 @@ class PlanComparisonService {
   }
 
   /// Gets the numeric value/tier of a plan (1=starter, 2=professional, 3=enterprise)
-  /// Returns -1 if plan is invalid
-  int getPlanValue(String planCode) {
+  /// Returns null if plan is invalid
+  int? getPlanValue(String planCode) {
     final index = _getPlanIndex(planCode);
-    return index == -1 ? -1 : index + 1;
+    return index == -1 ? null : index + 1;
   }
 
   /// Gets the list of all valid plan codes

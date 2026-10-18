@@ -38,7 +38,17 @@ void main() {
   });
 
   tearDown(() async {
-    await database.close();
+    // Note: each test closes the database in-body (before the test framework
+    // unmounts widgets). This is required because drift's StreamQueryStore
+    // schedules a Timer.run() when a StreamBuilder unsubscribes, which would
+    // otherwise trip flutter_test's "Timer still pending" invariant. Closing
+    // first sets drift's _isShuttingDown flag, making that a no-op.
+    // tearDown is kept as a safety net for tests that fail before in-body close.
+    try {
+      await database.close();
+    } catch (_) {
+      // Already closed in the test body; ignore.
+    }
   });
 
   Widget createTestWidget() {
@@ -93,6 +103,10 @@ void main() {
       // Verify warning icon is not displayed
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
       expect(find.byType(Badge), findsNothing);
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
 
     testWidgets('displays warning icon when failed entries exist',
@@ -105,6 +119,10 @@ void main() {
       // Verify warning icon is displayed
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       expect(find.byType(Badge), findsOneWidget);
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
 
     testWidgets('displays badge with correct failure count',
@@ -117,6 +135,10 @@ void main() {
       // Verify badge shows correct count
       expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
 
     testWidgets('navigates to SyncFailurePage when icon is tapped',
@@ -134,6 +156,10 @@ void main() {
       // Verify navigation to SyncFailurePage
       expect(find.byType(SyncFailurePage), findsOneWidget);
       expect(find.text('Sync Failures'), findsNWidgets(2)); // Title appears twice (app bar + page)
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
 
     testWidgets('icon is positioned in app bar actions',
@@ -148,6 +174,10 @@ void main() {
 
       // Verify icon is present in the page header instead.
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
 
     testWidgets('badge has correct styling', (WidgetTester tester) async {
@@ -162,6 +192,10 @@ void main() {
       // Verify badge styling (education palette error color)
       expect(badge.backgroundColor, ScholifyColors.error);
       expect(badge.textColor, Colors.white);
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
   });
 
@@ -174,6 +208,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+
+      // Close the database in-body so drift shuts down its stream store before
+      // the framework unmounts widgets (prevents "Timer still pending").
+      await database.close();
     });
   });
 }
