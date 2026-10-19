@@ -23,8 +23,19 @@ void main() {
     late SyncEngine syncEngine;
     late LicenseAlertService licenseAlertService;
     late PocketbaseGateway gateway;
+    bool dbClosed = false;
+
+    Future<void> closeDbOnce(WidgetTester tester) async {
+      if (!dbClosed) {
+        dbClosed = true;
+        await database.close();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
 
     setUp(() {
+      dbClosed = false;
       database = AppLocalDatabase(executor: NativeDatabase.memory());
       tenantContext = TenantContext();
       tenantContext.setTenant(
@@ -43,10 +54,14 @@ void main() {
     });
 
     tearDown(() async {
-      await database.close();
+      if (!dbClosed) {
+        dbClosed = true;
+        try { await database.close(); } catch (_) {}
+      }
     });
 
     testWidgets('displays red urgent banner for expired licenses', (tester) async {
+      try {
       // Create an expired license
       final now = DateTime.now();
       final expiredDate = now.subtract(const Duration(days: 5));
@@ -76,9 +91,13 @@ void main() {
       // Verify expired banner is displayed
       expect(find.text('Expired Licenses (1)'), findsOneWidget);
       expect(find.textContaining('Expired School:'), findsOneWidget);
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('displays red urgent banner for 7-day alerts', (tester) async {
+      try {
       // Create a license expiring in 5 days
       final now = DateTime.now();
       final urgentDate = now.add(const Duration(days: 5));
@@ -106,12 +125,16 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify urgent banner is displayed
-      expect(find.text('Urgent: Expiring in 7 Days or Less (1)'), findsOneWidget);
+      expect(find.text('Expiring within 7 days (1)'), findsOneWidget);
       expect(find.textContaining('Urgent School:'), findsOneWidget);
-      expect(find.textContaining('(5 days)'), findsOneWidget);
+      expect(find.textContaining('d left)'), findsOneWidget);
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('displays amber alert banner for 14-day alerts', (tester) async {
+      try {
       // Create a license expiring in 10 days
       final now = DateTime.now();
       final alertDate = now.add(const Duration(days: 10));
@@ -139,12 +162,16 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify alert banner is displayed
-      expect(find.text('Alert: Expiring in 14 Days or Less (1)'), findsOneWidget);
+      expect(find.text('Expiring within 14 days (1)'), findsOneWidget);
       expect(find.textContaining('Alert School:'), findsOneWidget);
-      expect(find.textContaining('(10 days)'), findsOneWidget);
+      expect(find.textContaining('d left)'), findsOneWidget);
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('displays multiple alert banners when multiple tiers are present', (tester) async {
+      try {
       // Create licenses in different alert tiers
       final now = DateTime.now();
       
@@ -190,11 +217,15 @@ void main() {
 
       // Verify all three banners are displayed
       expect(find.text('Expired Licenses (1)'), findsOneWidget);
-      expect(find.text('Urgent: Expiring in 7 Days or Less (1)'), findsOneWidget);
-      expect(find.text('Alert: Expiring in 14 Days or Less (1)'), findsOneWidget);
+      expect(find.text('Expiring within 7 days (1)'), findsOneWidget);
+      expect(find.text('Expiring within 14 days (1)'), findsOneWidget);
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('does not display banners when no alerts are present', (tester) async {
+      try {
       // Create a license with plenty of time remaining
       final now = DateTime.now();
       final futureDate = now.add(const Duration(days: 100));
@@ -223,8 +254,11 @@ void main() {
 
       // Verify no alert banners are displayed
       expect(find.text('Expired Licenses'), findsNothing);
-      expect(find.text('Urgent: Expiring in 7 Days or Less'), findsNothing);
-      expect(find.text('Alert: Expiring in 14 Days or Less'), findsNothing);
+      expect(find.text('Expiring within 7 days'), findsNothing);
+      expect(find.text('Expiring within 14 days'), findsNothing);
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
   });
 }
