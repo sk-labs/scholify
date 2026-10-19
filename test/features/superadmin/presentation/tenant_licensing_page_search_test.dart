@@ -17,6 +17,14 @@ import 'package:scholify/features/superadmin/presentation/tenant_licensing_page.
 /// - Debouncing (300ms)
 /// - Reactive list updates
 void main() {
+  // The licensing page has a tall create-license form above the tenant list.
+  // The default 800x600 test viewport overflows, squeezing the list's
+  // Expanded to zero height so tenant cards never lay out. Use a tall
+  // viewport so the list renders like on a real desktop.
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+  });
+
   late AppLocalDatabase database;
   late SyncEngine syncEngine;
   late TenantContext tenantContext;
@@ -34,6 +42,9 @@ void main() {
 
   setUp(() {
     dbClosed = false;
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    binding.platformDispatcher.views.first.physicalSize = const Size(1280, 1600);
+    binding.platformDispatcher.views.first.devicePixelRatio = 1.0;
     database = AppLocalDatabase(executor: NativeDatabase.memory());
     tenantContext = TenantContext();
     gateway = PocketbaseGateway(baseUrl: 'http://test.local');
@@ -49,6 +60,9 @@ void main() {
       dbClosed = true;
       try { await database.close(); } catch (_) {}
     }
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    binding.platformDispatcher.views.first.resetPhysicalSize();
+    binding.platformDispatcher.views.first.resetDevicePixelRatio();
   });
 
   Widget createTestWidget() {
@@ -148,6 +162,7 @@ void main() {
     });
 
     testWidgets('search is case-insensitive', (WidgetTester tester) async {
+      try {
       await createTestTenants(database);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -169,6 +184,9 @@ void main() {
       // Properly dispose the widget to clean up timers
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('shows empty state message when no matches',
@@ -240,6 +258,7 @@ void main() {
     });
 
     testWidgets('debounces search input (300ms)', (WidgetTester tester) async {
+      try {
       await createTestTenants(database);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -270,6 +289,9 @@ void main() {
       // Properly dispose the widget to clean up timers
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
   });
 }
