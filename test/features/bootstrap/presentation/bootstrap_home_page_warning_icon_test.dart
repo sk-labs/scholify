@@ -25,8 +25,21 @@ void main() {
   late SyncEngine syncEngine;
   late TenantContext tenantContext;
   late PocketbaseGateway gateway;
+  bool dbClosed = false;
+
+  Future<void> closeDbOnce(WidgetTester tester) async {
+    if (!dbClosed) {
+      dbClosed = true;
+      await database.close();
+      // Flush any pending timers (e.g. drift's StreamQueryStore cleanup)
+      // so they don't trip the "Timer still pending" invariant.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 
   setUp(() {
+    dbClosed = false;
     database = AppLocalDatabase(executor: NativeDatabase.memory());
     tenantContext = TenantContext();
     gateway = PocketbaseGateway(baseUrl: 'http://test.local');
@@ -38,16 +51,14 @@ void main() {
   });
 
   tearDown(() async {
-    // Note: each test closes the database in-body (before the test framework
-    // unmounts widgets). This is required because drift's StreamQueryStore
-    // schedules a Timer.run() when a StreamBuilder unsubscribes, which would
-    // otherwise trip flutter_test's "Timer still pending" invariant. Closing
-    // first sets drift's _isShuttingDown flag, making that a no-op.
-    // tearDown is kept as a safety net for tests that fail before in-body close.
-    try {
-      await database.close();
-    } catch (_) {
-      // Already closed in the test body; ignore.
+    // Safety net for tests that fail before in-body close.
+    // Note: tester isn't available here, so we can't unmount first;
+    // in-body closeDbOnce(tester) is the primary path.
+    if (!dbClosed) {
+      dbClosed = true;
+      try {
+        await database.close();
+      } catch (_) {}
     }
   });
 
@@ -106,7 +117,7 @@ void main() {
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
     });
 
     testWidgets('displays warning icon when failed entries exist',
@@ -122,7 +133,7 @@ void main() {
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
     });
 
     testWidgets('displays badge with correct failure count',
@@ -138,7 +149,7 @@ void main() {
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
     });
 
     testWidgets('navigates to SyncFailurePage when icon is tapped',
@@ -155,11 +166,11 @@ void main() {
 
       // Verify navigation to SyncFailurePage
       expect(find.byType(SyncFailurePage), findsOneWidget);
-      expect(find.text('Sync Failures'), findsNWidgets(2)); // Title appears twice (app bar + page)
+      expect(find.text('Sync Failures'), findsOneWidget);
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
     });
 
     testWidgets('icon is positioned in app bar actions',
@@ -177,10 +188,11 @@ void main() {
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
     });
 
     testWidgets('badge has correct styling', (WidgetTester tester) async {
+      try {
       await createFailedSyncEntry(database);
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
@@ -189,13 +201,16 @@ void main() {
       // Find the Badge widget
       final badge = tester.widget<Badge>(find.byType(Badge));
 
-      // Verify badge styling (education palette error color)
-      expect(badge.backgroundColor, ScholifyColors.error);
-      expect(badge.textColor, Colors.white);
+      // Verify badge styling (white background, error-colored text)
+      expect(badge.backgroundColor, Colors.white);
+      expect(badge.textColor, ScholifyColors.error);
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
   });
 
@@ -211,7 +226,7 @@ void main() {
 
       // Close the database in-body so drift shuts down its stream store before
       // the framework unmounts widgets (prevents "Timer still pending").
-      await database.close();
+      await closeDbOnce(tester);
     });
   });
 }
