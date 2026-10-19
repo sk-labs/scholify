@@ -21,8 +21,19 @@ void main() {
   late SyncEngine syncEngine;
   late TenantContext tenantContext;
   late PocketbaseGateway gateway;
+  bool dbClosed = false;
+
+  Future<void> closeDbOnce(WidgetTester tester) async {
+    if (!dbClosed) {
+      dbClosed = true;
+      await database.close();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 
   setUp(() {
+    dbClosed = false;
     database = AppLocalDatabase(executor: NativeDatabase.memory());
     tenantContext = TenantContext();
     gateway = PocketbaseGateway(baseUrl: 'http://test.local');
@@ -34,7 +45,10 @@ void main() {
   });
 
   tearDown(() async {
-    await database.close();
+    if (!dbClosed) {
+      dbClosed = true;
+      try { await database.close(); } catch (_) {}
+    }
   });
 
   Widget createTestWidget() {
@@ -79,6 +93,7 @@ void main() {
   group('TenantLicensingPage Search', () {
     testWidgets('displays search field with correct placeholder',
         (WidgetTester tester) async {
+      try {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -90,10 +105,14 @@ void main() {
       // Properly dispose the widget to clean up timers
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('filters tenants by case-insensitive substring match',
         (WidgetTester tester) async {
+      try {
       await createTestTenants(database);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -123,6 +142,9 @@ void main() {
       // Properly dispose the widget to clean up timers
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('search is case-insensitive', (WidgetTester tester) async {
@@ -151,6 +173,7 @@ void main() {
 
     testWidgets('shows empty state message when no matches',
         (WidgetTester tester) async {
+      try {
       await createTestTenants(database);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -173,10 +196,14 @@ void main() {
       // Properly dispose the widget to clean up timers
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('clear button clears search and shows all tenants',
         (WidgetTester tester) async {
+      try {
       await createTestTenants(database);
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -207,6 +234,9 @@ void main() {
       // Properly dispose the widget to clean up timers
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
+      } finally {
+        await closeDbOnce(tester);
+      }
     });
 
     testWidgets('debounces search input (300ms)', (WidgetTester tester) async {
