@@ -13,6 +13,7 @@ import '../../plan_upgrade/presentation/plan_upgrade_page.dart';
 import '../../branding/presentation/branding_settings_page.dart';
 import '../../timetable/data/timetable_repository.dart';
 import '../../homework/data/homework_repository.dart';
+import '../../attendance/data/attendance_repository.dart';
 
 class BootstrapHomePage extends StatelessWidget {
   const BootstrapHomePage({
@@ -311,6 +312,16 @@ class BootstrapHomePage extends StatelessWidget {
   /// homework, and fees at a glance.
   Widget _buildGuardianDashboard(
       BuildContext context, ThemeData theme, ColorScheme scheme) {
+    final homeworkRepo = HomeworkRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
+    final attendanceRepo = AttendanceRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -324,39 +335,55 @@ class BootstrapHomePage extends StatelessWidget {
             badgeLabel: 'Guardian',
           ),
           const SizedBox(height: 20),
-          _buildDashboardSection(
+          _buildTeacherSectionShell(
             context,
             theme,
             scheme,
             title: 'Children',
             icon: Icons.child_care_outlined,
             color: ScholifyColors.academicNavy,
-            emptyTitle: 'No children linked',
-            emptyMessage:
-                'Contact the school office to link your children to this account.',
+            child: StreamBuilder<List<StudentDirectoryEntry>>(
+              stream: attendanceRepo.watchStudents(),
+              builder: (context, snapshot) {
+                final students = snapshot.data ?? const [];
+                if (students.isEmpty) {
+                  return ScholifyEmptyState(
+                    icon: Icons.family_restroom_outlined,
+                    title: 'No children linked',
+                    message:
+                        'Contact the school office to link your children to this account.',
+                  );
+                }
+                return Column(
+                  children: [
+                    for (var i = 0; i < students.length; i++) ...[
+                      _buildChildRow(theme, scheme, students[i]),
+                      if (i < students.length - 1) const SizedBox(height: 8),
+                    ],
+                  ],
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
-          _buildDashboardSection(
+          _buildTeacherSectionShell(
             context,
             theme,
             scheme,
-            title: 'Attendance This Week',
+            title: 'Attendance This Month',
             icon: Icons.fact_check_outlined,
             color: ScholifyColors.scholarTeal,
-            emptyTitle: 'No attendance records',
-            emptyMessage:
-                'Attendance will appear here once the school marks it.',
+            child: _buildMyAttendanceSummary(theme, scheme, attendanceRepo),
           ),
           const SizedBox(height: 16),
-          _buildDashboardSection(
+          _buildTeacherSectionShell(
             context,
             theme,
             scheme,
             title: 'Homework Due',
             icon: Icons.assignment_outlined,
             color: ScholifyColors.achievementAmber,
-            emptyTitle: 'No pending homework',
-            emptyMessage: 'All caught up! New assignments will appear here.',
+            child: _buildHomeworkDueList(theme, homeworkRepo),
           ),
           const SizedBox(height: 28),
           Text('Quick Actions', style: theme.textTheme.titleLarge),
@@ -396,6 +423,22 @@ class BootstrapHomePage extends StatelessWidget {
   /// and attendance summary.
   Widget _buildStudentDashboard(
       BuildContext context, ThemeData theme, ColorScheme scheme) {
+    final timetableRepo = TimetableRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
+    final homeworkRepo = HomeworkRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
+    final attendanceRepo = AttendanceRepository(
+      database: syncEngine.database,
+      syncEngine: syncEngine,
+      tenantContext: tenantContext,
+    );
+    final todayName = _weekdayName(DateTime.now().weekday);
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -409,38 +452,57 @@ class BootstrapHomePage extends StatelessWidget {
             badgeLabel: 'Student',
           ),
           const SizedBox(height: 20),
-          _buildDashboardSection(
+          _buildTeacherSectionShell(
             context,
             theme,
             scheme,
             title: "Today's Classes",
             icon: Icons.schedule_outlined,
             color: ScholifyColors.academicNavy,
-            emptyTitle: 'No classes today',
-            emptyMessage: 'Your timetable will appear here once published.',
+            child: StreamBuilder<List<TimetableSlotEntry>>(
+              stream: timetableRepo.watchDaySlots(todayName),
+              builder: (context, snapshot) {
+                final slots = (snapshot.data ?? const [])
+                    .where((s) => s.isActive)
+                    .toList()
+                  ..sort((a, b) => a.periodIndex.compareTo(b.periodIndex));
+                if (slots.isEmpty) {
+                  return ScholifyEmptyState(
+                    icon: Icons.schedule_outlined,
+                    title: 'No classes today',
+                    message: 'Your timetable will appear here once published.',
+                  );
+                }
+                return Column(
+                  children: [
+                    for (var i = 0; i < slots.length; i++) ...[
+                      _buildClassRow(theme, scheme, slots[i]),
+                      if (i < slots.length - 1) const SizedBox(height: 8),
+                    ],
+                  ],
+                );
+              },
+            ),
           ),
           const SizedBox(height: 16),
-          _buildDashboardSection(
+          _buildTeacherSectionShell(
             context,
             theme,
             scheme,
             title: 'Homework Due',
             icon: Icons.assignment_outlined,
             color: ScholifyColors.achievementAmber,
-            emptyTitle: 'No homework due',
-            emptyMessage: 'All caught up! New assignments will appear here.',
+            child: _buildHomeworkDueList(theme, homeworkRepo),
           ),
           const SizedBox(height: 16),
-          _buildDashboardSection(
+          _buildTeacherSectionShell(
             context,
             theme,
             scheme,
             title: 'My Attendance',
             icon: Icons.fact_check_outlined,
             color: ScholifyColors.scholarTeal,
-            emptyTitle: 'No attendance records',
-            emptyMessage:
-                'Your attendance summary will appear here.',
+            child: _buildMyAttendanceSummary(theme, scheme, attendanceRepo),
           ),
           const SizedBox(height: 28),
           Text('Quick Actions', style: theme.textTheme.titleLarge),
@@ -652,6 +714,171 @@ class BootstrapHomePage extends StatelessWidget {
   }
 
   /// Section shell that takes a live child instead of an empty state.
+  /// Live homework list shared by the guardian/student dashboards: published,
+  /// active assignments sorted by due date, soonest first (max 3 shown).
+  Widget _buildHomeworkDueList(ThemeData theme, HomeworkRepository repo) {
+    return StreamBuilder<List<HomeworkAssignmentEntry>>(
+      stream: repo.watchAssignments(),
+      builder: (context, snapshot) {
+        final items = (snapshot.data ?? const [])
+            .where((a) => a.isActive && a.isPublished)
+            .toList()
+          ..sort((a, b) {
+            final ad = a.dueDate ?? DateTime(9999);
+            final bd = b.dueDate ?? DateTime(9999);
+            return ad.compareTo(bd);
+          });
+        if (items.isEmpty) {
+          return ScholifyEmptyState(
+            icon: Icons.assignment_outlined,
+            title: 'No homework due',
+            message: 'All caught up! New assignments will appear here.',
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < items.length && i < 3; i++) ...[
+              _buildAssignmentRow(theme, items[i]),
+              if (i < 2 && i < items.length - 1) const SizedBox(height: 8),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  /// Attendance summary for the first linked student (current month):
+  /// percentage plus present/absent/late counts. Used by both the student
+  /// ("My Attendance") and guardian dashboards.
+  Widget _buildMyAttendanceSummary(
+      ThemeData theme, ColorScheme scheme, AttendanceRepository repo) {
+    return StreamBuilder<List<StudentDirectoryEntry>>(
+      stream: repo.watchStudents(),
+      builder: (context, studentSnapshot) {
+        final students = studentSnapshot.data ?? const [];
+        if (students.isEmpty) {
+          return ScholifyEmptyState(
+            icon: Icons.fact_check_outlined,
+            title: 'No attendance records',
+            message: 'Attendance will appear here once the school marks it.',
+          );
+        }
+        final child = students.first;
+        return StreamBuilder<List<StudentAttendanceRecord>>(
+          stream: repo.watchStudentMonth(
+            studentId: child.id,
+            month: DateTime.now(),
+          ),
+          builder: (context, snapshot) {
+            final records = snapshot.data ?? const [];
+            if (records.isEmpty) {
+              return ScholifyEmptyState(
+                icon: Icons.fact_check_outlined,
+                title: 'No attendance records',
+                message:
+                    'Attendance will appear here once the school marks it.',
+              );
+            }
+            final present =
+                records.where((r) => r.status == 'present').length;
+            final absent = records.where((r) => r.status == 'absent').length;
+            final late = records.where((r) => r.status == 'late').length;
+            final pct = (present / records.length * 100).round();
+            return Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: ScholifyColors.scholarTeal.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$pct%',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: ScholifyColors.scholarTeal,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        child.fullName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$present present \u00b7 $absent absent \u00b7 $late late this month',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildChildRow(
+      ThemeData theme, ColorScheme scheme, StudentDirectoryEntry student) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: ScholifyColors.academicNavy.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.child_care_outlined,
+                size: 20, color: ScholifyColors.academicNavy),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  student.fullName,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (student.classSection?.isNotEmpty ?? false)
+                  Text(
+                    student.classSection!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTeacherSectionShell(
     BuildContext context,
     ThemeData theme,

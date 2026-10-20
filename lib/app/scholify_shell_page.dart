@@ -81,11 +81,24 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       ),
     );
     _impersonationService.addListener(_onImpersonationChanged);
+    // Pull the latest server data as soon as the signed-in shell mounts and
+    // keep it fresh in the background. Guardian/student panels have no manual
+    // sync controls, so without this their dashboards never receive module
+    // data (timetable, homework, attendance) on a fresh install.
+    _syncOnShellMount();
     // Load persisted branding into TenantContext so the app bar reflects it
     // immediately on shell mount (B3.3, B3.4, B3.5, B3.6)
     _loadBrandingIntoContext();
     // Check if guardian/student needs to complete their profile on first login.
     _checkProfileCompletion();
+  }
+
+  void _syncOnShellMount() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.syncEngine.startBackgroundSync();
+      widget.syncEngine.manualSync();
+    });
   }
 
   /// Shows a blocking profile-completion dialog for guardians/students
