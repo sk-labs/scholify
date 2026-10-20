@@ -183,6 +183,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     padding: const EdgeInsets.all(20),
                     child: _ProfileCompletionForm(
                       syncEngine: widget.syncEngine,
+                      isStudent: widget.tenantContext.role == 'student',
                       onCompleted: () {
                         Navigator.pop(context);
                         if (mounted) {
@@ -1209,10 +1210,12 @@ class _ProfileCompletionForm extends StatefulWidget {
   const _ProfileCompletionForm({
     required this.syncEngine,
     required this.onCompleted,
+    required this.isStudent,
   });
 
   final SyncEngine syncEngine;
   final VoidCallback onCompleted;
+  final bool isStudent;
 
   @override
   State<_ProfileCompletionForm> createState() =>
@@ -1246,13 +1249,16 @@ class _ProfileCompletionFormState
       if (userId == null || userId.isEmpty) {
         throw Exception('Not signed in');
       }
-      await gateway.client.collection('users').update(userId, body: {
+      final body = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
-        'relationship': _relationshipController.text.trim(),
         'profile_completed': true,
-      });
+      };
+      if (!widget.isStudent) {
+        body['relationship'] = _relationshipController.text.trim();
+      }
+      await gateway.client.collection('users').update(userId, body: body);
       widget.onCompleted();
     } catch (e) {
       if (mounted) {
@@ -1295,20 +1301,23 @@ class _ProfileCompletionFormState
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _relationshipController,
-            validator: (v) => (v == null || v.trim().isEmpty)
-                ? 'Relationship is required'
-                : null,
-            decoration: const InputDecoration(
-              labelText: 'Relationship with Student',
-              hintText: 'e.g. Father, Mother, Guardian',
-              prefixIcon:
-                  Icon(Icons.family_restroom_outlined),
-              border: OutlineInputBorder(),
+          // Students don't have a "relationship with student" — guardian-only field.
+          if (!widget.isStudent) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _relationshipController,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Relationship is required'
+                  : null,
+              decoration: const InputDecoration(
+                labelText: 'Relationship with Student',
+                hintText: 'e.g. Father, Mother, Guardian',
+                prefixIcon:
+                    Icon(Icons.family_restroom_outlined),
+                border: OutlineInputBorder(),
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 12),
           TextFormField(
             controller: _addressController,

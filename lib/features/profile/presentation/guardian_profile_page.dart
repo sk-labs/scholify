@@ -4,8 +4,9 @@ import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../../core/theme/scholify_colors.dart';
 
-/// Guardian profile page: personal details, relationship with student,
-/// contact info, and password change.
+/// Guardian/student profile page: personal details, contact info, and
+/// password change. Guardians also set their relationship with the student;
+/// students see a student-appropriate variant without that field.
 class GuardianProfilePage extends StatefulWidget {
   const GuardianProfilePage({
     super.key,
@@ -31,6 +32,9 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
   bool _isSaving = false;
   String _email = '';
   String? _error;
+
+  /// True when the signed-in user is a student (shares this page with guardians).
+  bool get _isStudent => widget.tenantContext.role == 'student';
 
   @override
   void initState() {
@@ -86,13 +90,17 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
       if (userId == null || userId.isEmpty) {
         throw Exception('Not signed in');
       }
-      await gateway.client.collection('users').update(userId, body: {
+      final body = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
-        'relationship': _relationshipController.text.trim(),
         'profile_completed': true,
-      });
+      };
+      // Guardians set their relationship with the student; students don't have one.
+      if (!_isStudent) {
+        body['relationship'] = _relationshipController.text.trim();
+      }
+      await gateway.client.collection('users').update(userId, body: body);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated')),
@@ -264,18 +272,20 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
                           ? 'Phone is required'
                           : null,
                 ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  theme,
-                  controller: _relationshipController,
-                  label: 'Relationship with Student',
-                  icon: Icons.family_restroom_outlined,
-                  hint: 'e.g. Father, Mother, Guardian',
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty)
-                          ? 'Relationship is required'
-                          : null,
-                ),
+                if (!_isStudent) ...[
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    theme,
+                    controller: _relationshipController,
+                    label: 'Relationship with Student',
+                    icon: Icons.family_restroom_outlined,
+                    hint: 'e.g. Father, Mother, Guardian',
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty)
+                            ? 'Relationship is required'
+                            : null,
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _buildTextField(
                   theme,
@@ -361,7 +371,7 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
                 const SizedBox(height: 4),
                 Text(
                   _nameController.text.isEmpty
-                      ? 'Guardian'
+                      ? (_isStudent ? 'Student' : 'Guardian')
                       : _nameController.text,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
