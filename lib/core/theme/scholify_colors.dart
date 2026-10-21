@@ -30,6 +30,24 @@ abstract final class ScholifyColors {
   /// Soft amber for light tints.
   static const Color amberSoft = Color(0xFFE8B93E);
 
+  /// [accent] adjusted to stay readable as a foreground on its own
+  /// translucent tint: unchanged in light mode, lightened toward
+  /// white in dark mode — dark accents (navy especially) otherwise
+  /// vanish on dark surfaces.
+  static Color onTint(Color accent, Brightness brightness) =>
+      brightness == Brightness.dark
+          ? Color.lerp(accent, Colors.white, 0.45)!
+          : accent;
+
+  /// Background tint for a small accent tile (icon medallion, badge):
+  /// a faint wash of the accent in light mode; in dark mode a
+  /// stronger wash of the lightened accent, since a dark accent at
+  /// low alpha disappears on dark surfaces.
+  static Color tintOf(Color accent, Brightness brightness) =>
+      brightness == Brightness.dark
+          ? onTint(accent, brightness).withValues(alpha: 0.25)
+          : accent.withValues(alpha: 0.12);
+
   // ── Light neutrals ─────────────────────────────────────────────────
   static const Color paperWhite = Color(0xFFFFFFFF);
   static const Color canvasLight = Color(0xFFF6F7F9);

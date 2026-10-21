@@ -1017,7 +1017,8 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                   decoration: BoxDecoration(
                     color: selected
                         ? destination.color
-                        : destination.color.withValues(alpha: 0.12),
+                        : ScholifyColors.tintOf(
+                            destination.color, theme.brightness),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -1025,7 +1026,8 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     size: 20,
                     color: selected
                         ? Colors.white
-                        : destination.color,
+                        : ScholifyColors.onTint(
+                            destination.color, theme.brightness),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1034,7 +1036,8 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     destination.label,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: selected
-                          ? destination.color
+                          ? ScholifyColors.onTint(
+                              destination.color, theme.brightness)
                           : scheme.onSurface,
                       fontWeight:
                           selected ? FontWeight.w700 : FontWeight.w500,
@@ -1046,7 +1049,8 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     width: 4,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: destination.color,
+                      color: ScholifyColors.onTint(
+                          destination.color, theme.brightness),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1145,14 +1149,17 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                   decoration: BoxDecoration(
                     color: selected
                         ? color
-                        : color.withValues(alpha: 0.12),
+                        : ScholifyColors.tintOf(color, theme.brightness),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
                     child: Text(
                       initial,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        color: selected ? Colors.white : color,
+                        color: selected
+                            ? Colors.white
+                            : ScholifyColors.onTint(
+                                color, theme.brightness),
                         fontWeight: FontWeight.w800,
                       ),
                     ),

@@ -861,6 +861,19 @@ class BootstrapHomePage extends StatelessWidget {
 
   Widget _buildChildRow(
       ThemeData theme, ColorScheme scheme, StudentDirectoryEntry student) {
+    // Each child gets a stable accent from the education palette so
+    // siblings are easy to tell apart at a glance.
+    const palette = [
+      ScholifyColors.academicNavy,
+      ScholifyColors.scholarTeal,
+      ScholifyColors.achievementAmber,
+      ScholifyColors.accentStudents,
+      ScholifyColors.accentComms,
+    ];
+    final color =
+        palette[student.id.hashCode.abs() % palette.length];
+    final initial =
+        student.fullName.isNotEmpty ? student.fullName[0].toUpperCase() : '?';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -873,11 +886,18 @@ class BootstrapHomePage extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: ScholifyColors.academicNavy.withValues(alpha: 0.12),
+              color: ScholifyColors.tintOf(color, theme.brightness),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.child_care_outlined,
-                size: 20, color: ScholifyColors.academicNavy),
+            child: Center(
+              child: Text(
+                initial,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: ScholifyColors.onTint(color, theme.brightness),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -937,10 +957,13 @@ class BootstrapHomePage extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
+                    color: ScholifyColors.tintOf(color, theme.brightness),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon,
+                      color:
+                          ScholifyColors.onTint(color, theme.brightness),
+                      size: 20),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -978,7 +1001,8 @@ class BootstrapHomePage extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: ScholifyColors.academicNavy.withValues(alpha: 0.12),
+              color: ScholifyColors.tintOf(
+                  ScholifyColors.academicNavy, theme.brightness),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
@@ -986,7 +1010,8 @@ class BootstrapHomePage extends StatelessWidget {
                 'P${slot.periodIndex + 1}',
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: ScholifyColors.academicNavy,
+                  color: ScholifyColors.onTint(
+                      ScholifyColors.academicNavy, theme.brightness),
                 ),
               ),
             ),
@@ -1029,7 +1054,8 @@ class BootstrapHomePage extends StatelessWidget {
               child: Text(
                 slot.classSection!,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: ScholifyColors.scholarTeal,
+                  color: ScholifyColors.onTint(
+                      ScholifyColors.scholarTeal, theme.brightness),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1042,6 +1068,46 @@ class BootstrapHomePage extends StatelessWidget {
   /// Single assignment row for the review list.
   Widget _buildAssignmentRow(
       ThemeData theme, HomeworkAssignmentEntry assignment) {
+    final scheme = theme.colorScheme;
+    // Due label with urgency coloring: overdue red, due today or
+    // tomorrow amber, otherwise muted with the date.
+    String? dueLabel;
+    var dueUrgent = false;
+    Color dueColor = scheme.onSurfaceVariant;
+    final due = assignment.dueDate;
+    if (due != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final dueDay = DateTime(due.year, due.month, due.day);
+      final days = dueDay.difference(today).inDays;
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      final dateText = '${dueDay.day} ${months[dueDay.month - 1]}';
+      if (days < 0) {
+        dueLabel = 'Overdue · $dateText';
+        dueColor = scheme.error;
+        dueUrgent = true;
+      } else if (days == 0) {
+        dueLabel = 'Due today';
+        dueColor = ScholifyColors.onTint(
+            ScholifyColors.achievementAmber, theme.brightness);
+        dueUrgent = true;
+      } else if (days == 1) {
+        dueLabel = 'Due tomorrow';
+        dueColor = ScholifyColors.onTint(
+            ScholifyColors.achievementAmber, theme.brightness);
+        dueUrgent = true;
+      } else {
+        dueLabel = 'Due $dateText';
+      }
+    }
+    final subject = assignment.subjectName ?? '';
+    final subtitle = [
+      if (subject.isNotEmpty) subject,
+      if (dueLabel != null) dueLabel,
+    ].join(' · ');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -1059,13 +1125,29 @@ class BootstrapHomePage extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              assignment.title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  assignment.title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: dueUrgent ? dueColor : scheme.onSurfaceVariant,
+                      fontWeight:
+                          dueUrgent ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
         ],
@@ -1217,10 +1299,13 @@ class BootstrapHomePage extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
+                    color: ScholifyColors.tintOf(color, theme.brightness),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(icon, color: color, size: 20),
+                  child: Icon(icon,
+                      color:
+                          ScholifyColors.onTint(color, theme.brightness),
+                      size: 20),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -1593,11 +1678,12 @@ class _ActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
+              if (spec.onTap != null)
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
             ],
           ),
           ),

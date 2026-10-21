@@ -350,7 +350,8 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
         label: 'Completion Rate',
         value: '${completionRate.toStringAsFixed(0)}%',
         icon: Icons.percent_outlined,
-        color: ScholifyColors.scholarTeal,
+        color: ScholifyColors.onTint(
+            ScholifyColors.scholarTeal, theme.brightness),
       ),
       _PerfStatCard(
         label: 'Completed',
@@ -448,7 +449,8 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
                           style: theme.textTheme.headlineLarge
                               ?.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: ScholifyColors.scholarTeal,
+                            color: ScholifyColors.onTint(
+                                ScholifyColors.scholarTeal, theme.brightness),
                           ),
                         ),
                         Text(
@@ -1022,7 +1024,8 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
                     ? Icons.grading_outlined
                     : Icons.check_circle_outline,
                 size: 16,
-                color: ScholifyColors.scholarTeal,
+                color: ScholifyColors.onTint(
+                    ScholifyColors.scholarTeal, theme.brightness),
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -1048,7 +1051,8 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
                   child: Text(
                     'Grade ${submission.gradeScore!.round()}',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: ScholifyColors.scholarTeal,
+                      color: ScholifyColors.onTint(
+                          ScholifyColors.scholarTeal, theme.brightness),
                       fontWeight: FontWeight.w800,
                     ),
                   ),

@@ -45,7 +45,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
   Timer? _debounceTimer;
   String? _planFilter; // null = all, 'starter', 'professional', 'enterprise'
   bool? _activeFilter; // null = all, true = active, false = suspended
-  
+
   late final LicenseAlertService _licenseAlertService;
   late final ImpersonationService _impersonationService;
   Map<String, AlertTier> _alertTiers = {};
@@ -68,7 +68,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
         gateway: widget.syncEngine.pocketbaseGateway,
       ),
     );
-    
+
     // Watch alerts and build a map of tenantId -> AlertTier
     _licenseAlertService.watchAlerts().listen((alerts) {
       if (mounted) {
@@ -113,14 +113,12 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
 
     // Apply plan filter
     if (_planFilter != null) {
-      filtered =
-          filtered.where((t) => t.planCode == _planFilter).toList();
+      filtered = filtered.where((t) => t.planCode == _planFilter).toList();
     }
 
     // Apply active status filter
     if (_activeFilter != null) {
-      filtered =
-          filtered.where((t) => t.isActive == _activeFilter).toList();
+      filtered = filtered.where((t) => t.isActive == _activeFilter).toList();
     }
 
     return filtered;
@@ -143,97 +141,107 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
             ),
         ],
       ),
+      // Scroll-safe layout: the whole page (header + license list) scrolls as
+      // one CustomScrollView. The previous Column + Expanded layout overflowed
+      // by ~21px on short windows because the tall create-license form left
+      // no room for the list (RenderFlex overflow at the body Column).
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildCreateLicenseCard(),
-            const SizedBox(height: 16),
-            _buildSearchField(),
-            const SizedBox(height: 12),
-            _buildFilterChips(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: StreamBuilder<List<TenantLicenseView>>(
-                stream: widget.syncEngine.database.watchTenantLicenseViews(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Failed to load licenses: ${snapshot.error}'),
-                    );
-                  }
-
-                  final allLicenses = snapshot.data ?? const [];
-                  final licenses = _applyFilters(allLicenses);
-
-                  if (allLicenses.isEmpty) {
-                    return const Center(
-                      child: Text('No tenant licenses created yet.'),
-                    );
-                  }
-
-                  if (licenses.isEmpty) {
-                    return const Center(
-                      child: Text('No tenants match the current filters.'),
-                    );
-                  }
-
-                  return ListView.separated(
-                    itemCount: licenses.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final item = licenses[index];
-                      final alertTier = _alertTiers[item.tenantId];
-
-                      return _TenantLicenseCard(
-                        item: item,
-                        alertTier: alertTier,
-                        dateFormat: dateFormat,
-                        onActivate: item.isActive
-                            ? null
-                            : () => _setLicenseStatus(item, true),
-                        onSuspend: item.isActive
-                            ? () => _setLicenseStatus(item, false)
-                            : null,
-                        onSetContext: () {
-                          widget.tenantContext.setTenant(
-                            tenantId: item.tenantId,
-                            tenantName: item.tenantName,
-                            role: 'school_owner',
-                            isSuperAdmin: true,
-                          );
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Tenant context switched to ${item.tenantName}.',
-                              ),
-                            ),
-                          );
-                        },
-                        onDetails: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => TenantDetailPage(
-                                tenantId: item.tenantId,
-                                syncEngine: widget.syncEngine,
-                                impersonationService:
-                                    _impersonationService,
-                              ),
-                            ),
-                          );
-                        },
-                        onImpersonate: () => _handleImpersonate(item),
-                      );
-                    },
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildCreateLicenseCard()),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            SliverToBoxAdapter(child: _buildSearchField()),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            SliverToBoxAdapter(child: _buildFilterChips()),
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            StreamBuilder<List<TenantLicenseView>>(
+              stream: widget.syncEngine.database.watchTenantLicenseViews(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: CircularProgressIndicator()),
                   );
-                },
-              ),
+                }
+
+                if (snapshot.hasError) {
+                  return SliverToBoxAdapter(
+                    child: Center(
+                      child: Text('Failed to load licenses: ${snapshot.error}'),
+                    ),
+                  );
+                }
+
+                final allLicenses = snapshot.data ?? const [];
+                final licenses = _applyFilters(allLicenses);
+
+                if (allLicenses.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text('No tenant licenses created yet.'),
+                    ),
+                  );
+                }
+
+                if (licenses.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text('No tenants match the current filters.'),
+                    ),
+                  );
+                }
+
+                return SliverList.separated(
+                  itemCount: licenses.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final item = licenses[index];
+                    final alertTier = _alertTiers[item.tenantId];
+
+                    return _TenantLicenseCard(
+                      item: item,
+                      alertTier: alertTier,
+                      dateFormat: dateFormat,
+                      onActivate: item.isActive
+                          ? null
+                          : () => _setLicenseStatus(item, true),
+                      onSuspend: item.isActive
+                          ? () => _setLicenseStatus(item, false)
+                          : null,
+                      onSetContext: () {
+                        widget.tenantContext.setTenant(
+                          tenantId: item.tenantId,
+                          tenantName: item.tenantName,
+                          role: 'school_owner',
+                          isSuperAdmin: true,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Tenant context switched to ${item.tenantName}.',
+                            ),
+                          ),
+                        );
+                      },
+                      onDetails: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => TenantDetailPage(
+                              tenantId: item.tenantId,
+                              syncEngine: widget.syncEngine,
+                              impersonationService: _impersonationService,
+                            ),
+                          ),
+                        );
+                      },
+                      onImpersonate: () => _handleImpersonate(item),
+                    );
+                  },
+                );
+              },
             ),
           ],
         ),
@@ -270,10 +278,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            const Text(
-              'Plan:',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+            const Text('Plan:', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(width: 4),
             FilterChip(
               label: const Text('All'),
@@ -612,9 +617,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
           .first;
 
       // Create CSV export service
-      final csvService = CSVExportService(
-        database: widget.syncEngine.database,
-      );
+      final csvService = CSVExportService(database: widget.syncEngine.database);
 
       // Generate CSV content (Q2.2, Q2.3, Q2.5, Q2.6)
       final csvContent = await csvService.exportTenantList(tenants);
@@ -631,9 +634,7 @@ class _TenantLicensingPageState extends State<TenantLicensingPage> {
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('CSV Export'),
-              content: SingleChildScrollView(
-                child: SelectableText(csvContent),
-              ),
+              content: SingleChildScrollView(child: SelectableText(csvContent)),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -751,8 +752,7 @@ class _TenantLicenseCard extends StatelessWidget {
             const SizedBox(height: 6),
             _DetailRow(
               icon: Icons.event_outlined,
-              label:
-                  'Issued ${dateFormat.format(item.issuedAt.toLocal())}',
+              label: 'Issued ${dateFormat.format(item.issuedAt.toLocal())}',
             ),
             if (item.expiresAt != null) ...[
               const SizedBox(height: 6),
@@ -859,8 +859,9 @@ class _TenantLicenseCard extends StatelessWidget {
       chips.add(
         Chip(
           label: Text(item.isActive ? 'Active' : 'Suspended'),
-          backgroundColor:
-              item.isActive ? Colors.green.shade100 : Colors.red.shade100,
+          backgroundColor: item.isActive
+              ? Colors.green.shade100
+              : Colors.red.shade100,
         ),
       );
     }
