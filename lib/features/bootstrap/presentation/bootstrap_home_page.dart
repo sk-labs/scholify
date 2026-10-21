@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/constants/branding.dart';
 import '../../../core/database/local_database.dart';
@@ -93,12 +94,18 @@ class BootstrapHomePage extends StatelessWidget {
             color: ScholifyColors.scholarTeal,
             title: 'Sync State',
             value: syncState,
+            subtitle: syncEngine.lastSyncAt == null
+                ? 'Not synced yet this session'
+                : 'Last synced ${DateFormat('h:mm a').format(syncEngine.lastSyncAt!.toLocal())}',
           ),
           _StatusCard(
             icon: Icons.pending_actions,
             color: ScholifyColors.achievementAmber,
             title: 'Pending Sync Jobs',
             value: '${syncEngine.pendingJobs}',
+            subtitle: syncEngine.pendingJobs == 0
+                ? 'All changes uploaded'
+                : 'Waiting to upload',
           ),
         ];
 
@@ -1511,12 +1518,14 @@ class _StatusCard extends StatelessWidget {
     required this.color,
     required this.title,
     required this.value,
+    this.subtitle,
   });
 
   final IconData icon;
   final Color color;
   final String title;
   final String value;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -1580,6 +1589,17 @@ class _StatusCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),

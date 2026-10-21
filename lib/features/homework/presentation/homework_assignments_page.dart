@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
@@ -513,32 +514,35 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
   }
 
   Widget _buildTypeSelector() {
+    final scheme = Theme.of(context).colorScheme;
+    ChoiceChip typeChip(String label, String type) {
+      final selected = _selectedType == type;
+      return ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        selectedColor: ScholifyColors.academicNavy,
+        checkmarkColor: Colors.white,
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : scheme.onSurface,
+          fontWeight: FontWeight.w600,
+        ),
+        onSelected: (_) {
+          setState(() {
+            _selectedType = type;
+            _viewingSubmissionsFor = null;
+          });
+        },
+      );
+    }
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
         children: [
-          ChoiceChip(
-            label: const Text('Homework'),
-            selected: _selectedType == HomeworkRepository.homeworkType,
-            onSelected: (_) {
-              setState(() {
-                _selectedType = HomeworkRepository.homeworkType;
-                _viewingSubmissionsFor = null;
-              });
-            },
-          ),
-          ChoiceChip(
-            label: const Text('Daily Assignment'),
-            selected: _selectedType == HomeworkRepository.dailyAssignmentType,
-            onSelected: (_) {
-              setState(() {
-                _selectedType = HomeworkRepository.dailyAssignmentType;
-                _viewingSubmissionsFor = null;
-              });
-            },
-          ),
+          typeChip('Homework', HomeworkRepository.homeworkType),
+          typeChip('Daily Assignment', HomeworkRepository.dailyAssignmentType),
         ],
       ),
     );
@@ -761,12 +765,8 @@ class _HomeworkAssignmentsPageState extends State<HomeworkAssignmentsPage> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final local = date.toLocal();
-    final month = local.month.toString().padLeft(2, '0');
-    final day = local.day.toString().padLeft(2, '0');
-    return '${local.year}-$month-$day';
-  }
+  String _formatDate(DateTime date) =>
+      DateFormat('d MMM yyyy').format(date.toLocal());
 
   String? _emptyToNull(String value) {
     final trimmed = value.trim();

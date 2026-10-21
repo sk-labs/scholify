@@ -61,7 +61,6 @@ class _FeeOverviewPageState extends State<FeeOverviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Fees (Offline-First)')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/database/local_database.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
 import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/student_repository.dart';
 
@@ -52,12 +53,27 @@ class _StudentDirectoryPageState extends State<StudentDirectoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Students (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Students',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'School directory — tap a student to edit their record.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
             _buildFormCard(),
             const SizedBox(height: 12),
             Expanded(
@@ -98,6 +114,29 @@ class _StudentDirectoryPageState extends State<StudentDirectoryPage> {
 
                       return Card(
                         child: ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: ScholifyColors.tintOf(
+                                  ScholifyColors.accentStudents,
+                                  theme.brightness),
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                            child: Center(
+                              child: Text(
+                                student.fullName.isNotEmpty
+                                    ? student.fullName[0].toUpperCase()
+                                    : '?',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: ScholifyColors.onTint(
+                                      ScholifyColors.accentStudents,
+                                      theme.brightness),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
                           title: Text(student.fullName),
                           subtitle: Text(subtitle),
                           trailing: Text(student.id),

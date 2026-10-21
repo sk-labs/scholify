@@ -544,7 +544,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       if (access[ScholifyModuleFeature.exams] ?? false)
         _ShellDestination(
           label: 'Exams',
-          icon: Icons.quiz,
+          icon: Icons.workspace_premium_outlined,
         color: ScholifyColors.academicNavy,
           page: ExamOverviewPage(
             tenantContext: widget.tenantContext,

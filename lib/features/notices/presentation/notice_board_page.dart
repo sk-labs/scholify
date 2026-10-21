@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/local_database.dart';
+import '../../../core/services/local_notification_service.dart';
 import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
+import '../../../core/theme/scholify_colors.dart';
 import '../../../core/widgets/scholify_empty_state.dart';
 import '../data/notice_board_repository.dart';
 
@@ -55,21 +57,49 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
     super.dispose();
   }
 
+  /// Staff and management compose and moderate notices; family
+  /// roles (guardian/student) are readers only.
+  bool get _canManage {
+    final role = widget.tenantContext.role.toLowerCase();
+    return role == 'superadmin' ||
+        role == 'school_owner' ||
+        role == 'school_admin' ||
+        role == 'teacher';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notice Board (Offline-First)')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildComposerCard(),
-            const SizedBox(height: 12),
+            Text(
+              'Notice Board',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _canManage
+                  ? 'Publish announcements and keep everyone informed.'
+                  : 'Announcements from your school.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_canManage) ...[
+              _buildComposerCard(),
+              const SizedBox(height: 16),
+            ],
             Expanded(
               child: StreamBuilder<List<NoticeBoardEntry>>(
-                stream: _repository.watchNotices(publishedOnly: false),
+                stream: _repository.watchNotices(publishedOnly: !_canManage),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -81,45 +111,36 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
                     );
                   }
 
-                  final notices = snapshot.data ?? const <NoticeBoardEntry>[];
+                  var notices = snapshot.data ?? const <NoticeBoardEntry>[];
+                  if (!_canManage) {
+                    // Readers only see notices addressed to their
+                    // audience that have not expired - the same rule
+                    // the notification service applies.
+                    final role = widget.tenantContext.role;
+                    final now = DateTime.now();
+                    notices = notices
+                        .where((n) =>
+                            LocalNotificationService.audienceMatches(
+                                n.audience, role) &&
+                            (n.expiresAt == null ||
+                                n.expiresAt!.isAfter(now)))
+                        .toList();
+                  }
                   if (notices.isEmpty) {
-                    return const ScholifyEmptyState(
+                    return ScholifyEmptyState(
                       icon: Icons.campaign_outlined,
                       title: 'No notices yet',
-                      message:
-                          'Publish your first announcement using the card above.',
+                      message: _canManage
+                          ? 'Publish your first announcement using the card above.'
+                          : 'Notices from your school will appear here.',
                     );
                   }
 
                   return ListView.separated(
                     itemCount: notices.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final notice = notices[index];
-                      final publishText = dateFormat.format(
-                        notice.publishAt.toLocal(),
-                      );
-                      final expiryText = notice.expiresAt == null
-                          ? 'No expiry'
-                          : 'Expires ${dateFormat.format(notice.expiresAt!.toLocal())}';
-
-                      return Card(
-                        child: ListTile(
-                          title: Text(notice.title),
-                          subtitle: Text(
-                            '${notice.message}\nAudience: ${notice.audience.toUpperCase()} | ${notice.isPublished ? 'Published' : 'Draft'}\nPublished: $publishText | $expiryText',
-                          ),
-                          isThreeLine: true,
-                          trailing: IconButton(
-                            tooltip: 'Delete notice',
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: _isSaving
-                                ? null
-                                : () => _deleteNotice(notice),
-                          ),
-                        ),
-                      );
-                    },
+                    itemBuilder: (context, index) =>
+                        _buildNoticeCard(theme, notices[index]),
                   );
                 },
               ),
@@ -129,6 +150,126 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
       ),
     );
   }
+
+  Widget _buildNoticeCard(ThemeData theme, NoticeBoardEntry notice) {
+    final scheme = theme.colorScheme;
+    final dateFormat = DateFormat('dd MMM yyyy');
+    final audienceColor = _audienceColor(notice.audience);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    notice.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    notice.message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: ScholifyColors.tintOf(
+                              audienceColor, theme.brightness),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _audienceLabel(notice.audience),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: ScholifyColors.onTint(
+                                audienceColor, theme.brightness),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        dateFormat.format(notice.publishAt.toLocal()),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (_canManage && !notice.isPublished)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: ScholifyColors.tintOf(
+                                ScholifyColors.slate600, theme.brightness),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Draft',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: ScholifyColors.onTint(
+                                  ScholifyColors.slate600,
+                                  theme.brightness),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      if (_canManage && notice.expiresAt != null)
+                        Text(
+                          'Expires ${dateFormat.format(notice.expiresAt!.toLocal())}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (_canManage)
+              IconButton(
+                tooltip: 'Delete notice',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: _isSaving ? null : () => _deleteNotice(notice),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _audienceLabel(String audience) => switch (audience) {
+        'students' => 'Students',
+        'parents' => 'Parents',
+        'staff' => 'Staff',
+        _ => 'Everyone',
+      };
+
+  Color _audienceColor(String audience) => switch (audience) {
+        'students' => ScholifyColors.accentStudents,
+        'parents' => ScholifyColors.achievementAmber,
+        'staff' => ScholifyColors.scholarTeal,
+        _ => ScholifyColors.academicNavy,
+      };
 
   Widget _buildComposerCard() {
     return Card(
@@ -193,6 +334,13 @@ class _NoticeBoardPageState extends State<NoticeBoardPage> {
                 FilterChip(
                   label: const Text('Published'),
                   selected: _isPublished,
+                  selectedColor: ScholifyColors.academicNavy,
+                  checkmarkColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: _isPublished
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
                   onSelected: (value) {
                     setState(() {
                       _isPublished = value;
