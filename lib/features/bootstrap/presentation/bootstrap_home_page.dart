@@ -22,11 +22,30 @@ class BootstrapHomePage extends StatelessWidget {
     required this.tenantContext,
     required this.syncEngine,
     this.onSignOut,
+    this.onNavigate,
+    this.availableDestinations,
   });
 
   final TenantContext tenantContext;
   final SyncEngine syncEngine;
   final Future<void> Function()? onSignOut;
+
+  /// Navigates the shell to the destination with the given label
+  /// (e.g. 'Timetable'). Null in tests/previews — quick actions no-op.
+  final void Function(String destinationLabel)? onNavigate;
+
+  /// Lazily supplies the destination labels the shell currently
+  /// offers (plan-gated). Quick actions whose target is absent render
+  /// disabled instead of silently doing nothing.
+  final Set<String> Function()? availableDestinations;
+
+  /// Tap handler for a quick action that navigates to [label], or
+  /// null (disabled card) when that destination is not available.
+  VoidCallback? _navTap(String label) {
+    final available = availableDestinations?.call();
+    if (available != null && !available.contains(label)) return null;
+    return () => onNavigate?.call(label);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -400,14 +419,14 @@ class BootstrapHomePage extends StatelessWidget {
               color: ScholifyColors.academicNavy,
               title: 'View Timetable',
               subtitle: 'Class schedules',
-              onTap: () {},
+              onTap: _navTap('Timetable'),
             ),
             _ActionSpec(
               icon: Icons.notifications_outlined,
               color: ScholifyColors.accentComms,
               title: 'Notices',
               subtitle: 'School announcements',
-              onTap: () {},
+              onTap: _navTap('Notices'),
             ),
             _ActionSpec(
               icon: Icons.logout_outlined,
@@ -519,21 +538,21 @@ class BootstrapHomePage extends StatelessWidget {
               color: ScholifyColors.academicNavy,
               title: 'My Timetable',
               subtitle: 'Weekly schedule',
-              onTap: () {},
+              onTap: _navTap('Timetable'),
             ),
             _ActionSpec(
               icon: Icons.grade_outlined,
               color: ScholifyColors.scholarTeal,
               title: 'My Grades',
               subtitle: 'Results & report cards',
-              onTap: () {},
+              onTap: _navTap('Exams'),
             ),
             _ActionSpec(
               icon: Icons.notifications_outlined,
               color: ScholifyColors.accentComms,
               title: 'Notices',
               subtitle: 'School announcements',
-              onTap: () {},
+              onTap: _navTap('Notices'),
             ),
             _ActionSpec(
               icon: Icons.logout_outlined,
@@ -680,28 +699,28 @@ class BootstrapHomePage extends StatelessWidget {
               color: ScholifyColors.scholarTeal,
               title: 'Mark Attendance',
               subtitle: "Today's classes",
-              onTap: () {},
+              onTap: _navTap('Attendance'),
             ),
             _ActionSpec(
               icon: Icons.add_task_outlined,
               color: ScholifyColors.academicNavy,
               title: 'New Homework',
               subtitle: 'Create assignment',
-              onTap: () {},
+              onTap: _navTap('Homework'),
             ),
             _ActionSpec(
               icon: Icons.calendar_month_outlined,
               color: ScholifyColors.academicNavy,
               title: 'My Timetable',
               subtitle: 'Weekly schedule',
-              onTap: () {},
+              onTap: _navTap('Timetable'),
             ),
             _ActionSpec(
               icon: Icons.notifications_outlined,
               color: ScholifyColors.accentComms,
               title: 'Notices',
               subtitle: 'School announcements',
-              onTap: () {},
+              onTap: _navTap('Notices'),
             ),
             _ActionSpec(
               icon: Icons.logout_outlined,
@@ -1553,7 +1572,10 @@ class _ActionSpec {
   final Color color;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+
+  /// Null renders the card visibly disabled (used when a quick
+  /// action's destination module is not in the tenant's plan).
+  final VoidCallback? onTap;
 }
 
 /// A polished quick action card: icon medallion + title + subtitle,
@@ -1583,7 +1605,9 @@ class _ActionCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: spec.onTap,
-        child: Padding(
+        child: Opacity(
+          opacity: spec.onTap == null ? 0.45 : 1,
+          child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -1628,6 +1652,7 @@ class _ActionCard extends StatelessWidget {
                 color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
+          ),
           ),
         ),
       ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import '../core/database/local_database.dart';
 import '../core/services/audit_log_service.dart';
 import '../core/services/impersonation_service.dart';
 import '../core/services/license_alert_service.dart';
+import '../core/services/local_notification_service.dart';
 import '../core/services/seat_limit_enforcement_service.dart';
 import '../core/sync/sync_engine.dart';
 import '../core/tenant/tenant_context.dart';
@@ -61,6 +63,34 @@ class ScholifyShellPage extends StatefulWidget {
 
 class _ScholifyShellPageState extends State<ScholifyShellPage> {
   int _selectedIndex = 0;
+
+  /// The destinations from the most recent shell build, in final order
+  /// (after the family/teacher Foundation move). Dashboard quick
+  /// actions navigate by destination label against this list.
+  List<_ShellDestination> _lastDestinations = const [];
+
+  late final LocalNotificationService _notificationService;
+  bool _syncWasRunning = false;
+
+  /// Fires the notification checks when a sync round finishes
+  /// (isSyncing true → false), so alerts reflect freshly pulled data.
+  void _onSyncStateForNotifications() {
+    final running = widget.syncEngine.isSyncing;
+    if (_syncWasRunning && !running) {
+      unawaited(_notificationService.checkAndNotify());
+    }
+    _syncWasRunning = running;
+  }
+
+  void _navigateToLabel(String label) {
+    final index =
+        _lastDestinations.indexWhere((d) => d.label == label);
+    if (index == -1 || !mounted) return;
+    setState(() {
+      _selectedIndex = index;
+      _showingProfile = false;
+    });
+  }
   bool _showingProfile = false;
   bool _familyLandingApplied = false;
   late final ImpersonationService _impersonationService;
@@ -81,6 +111,15 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       ),
     );
     _impersonationService.addListener(_onImpersonationChanged);
+    // Local notifications: check for new notices / due homework each
+    // time a sync round completes (best-effort, self-guarded).
+    _notificationService = LocalNotificationService(
+      database: widget.syncEngine.database,
+      tenantContext: widget.tenantContext,
+      gateway: widget.syncEngine.pocketbaseGateway,
+    );
+    unawaited(_notificationService.initialize());
+    widget.syncEngine.addListener(_onSyncStateForNotifications);
     // Pull the latest server data as soon as the signed-in shell mounts and
     // keep it fresh in the background. Guardian/student panels have no manual
     // sync controls, so without this their dashboards never receive module
@@ -243,6 +282,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
   @override
   void dispose() {
     _impersonationService.removeListener(_onImpersonationChanged);
+    widget.syncEngine.removeListener(_onSyncStateForNotifications);
     _navSearchController.dispose();
     super.dispose();
   }
@@ -384,6 +424,9 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           tenantContext: widget.tenantContext,
           syncEngine: widget.syncEngine,
           onSignOut: widget.onSignOut,
+          onNavigate: _navigateToLabel,
+          availableDestinations: () =>
+              _lastDestinations.map((d) => d.label).toSet(),
         ),
         section: _ShellSection.foundation
       ),      if (widget.tenantContext.isSuperAdmin)
@@ -673,6 +716,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         }
       }
     }
+    _lastDestinations = destinations;
 
     final maxIndex = destinations.length - 1;
     final activeIndex = _selectedIndex > maxIndex ? maxIndex : _selectedIndex;
