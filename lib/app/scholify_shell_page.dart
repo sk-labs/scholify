@@ -833,7 +833,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                 : ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      for (final section in _ShellSection.values)
+                      for (final section in _sectionRenderOrder)
                         _buildNavSection(
                           context,
                           section,
@@ -1216,6 +1216,18 @@ enum _ShellSection {
   final String label;
   final IconData icon;
 }
+
+/// Render order for the sidebar sections. Foundation always renders
+/// LAST — just above the pinned My Profile area — for every role
+/// (standing preference). Family/teacher roles additionally move the
+/// Foundation destination itself into Operations; management roles
+/// keep it in its own section, which this order places at the bottom.
+const _sectionRenderOrder = [
+  _ShellSection.academics,
+  _ShellSection.operations,
+  _ShellSection.administration,
+  _ShellSection.foundation,
+];
 
 /// Form embedded in the first-login blocking dialog.
 /// Guardian must complete all fields to unlock the panel.
