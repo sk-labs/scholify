@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../remote/pocketbase_gateway.dart';
 import '../tenant/tenant_context.dart';
+import '../../features/family/family_links.dart';
 import 'auth_session.dart';
 
 class SessionManager extends ChangeNotifier {
@@ -103,6 +104,7 @@ class SessionManager extends ChangeNotifier {
   Future<void> signOut() async {
     gateway.signOut();
     tenantContext.clear();
+    FamilyChildSelection.reset();
     _errorMessage = null;
 
     await preferences.remove(_tokenKey);

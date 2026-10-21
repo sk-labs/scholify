@@ -7,6 +7,7 @@ import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../../core/theme/scholify_colors.dart';
 import '../../../core/widgets/scholify_empty_state.dart';
+import '../../family/family_links.dart';
 import '../data/attendance_repository.dart';
 
 /// Guardian-facing attendance view: analytics and trends for their child.
@@ -46,13 +47,18 @@ class _GuardianAttendancePageState extends State<GuardianAttendancePage> {
 
     return Scaffold(
       body: StreamBuilder<List<StudentDirectoryEntry>>(
-        stream: _repository.watchStudents(),
+        stream: watchLinkedChildren(
+          widget.syncEngine.database,
+          identity:
+              FamilyIdentity.fromGateway(widget.syncEngine.pocketbaseGateway),
+          tenantId: widget.tenantContext.tenantId,
+        ),
         builder: (context, studentSnapshot) {
-          final students = studentSnapshot.data ?? const [];
+          final children = studentSnapshot.data ?? const [];
           if (studentSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (students.isEmpty) {
+          if (children.isEmpty) {
             return Center(
               child: ScholifyEmptyState(
                 icon: Icons.family_restroom_outlined,
@@ -62,9 +68,25 @@ class _GuardianAttendancePageState extends State<GuardianAttendancePage> {
               ),
             );
           }
-          // For now show the first linked child; a child switcher can be added.
-          final child = students.first;
-          return _buildAnalytics(context, theme, scheme, child);
+          return ValueListenableBuilder<String?>(
+            valueListenable: FamilyChildSelection.selectedStudentId,
+            builder: (context, _, _) {
+              final child = effectiveChild(children)!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (children.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                      child: FamilyChildSwitcher(children: children),
+                    ),
+                  Expanded(
+                    child: _buildAnalytics(context, theme, scheme, child),
+                  ),
+                ],
+              );
+            },
+          );
         },
       ),
     );

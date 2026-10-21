@@ -14,6 +14,7 @@ import '../../branding/presentation/branding_settings_page.dart';
 import '../../timetable/data/timetable_repository.dart';
 import '../../homework/data/homework_repository.dart';
 import '../../attendance/data/attendance_repository.dart';
+import '../../family/family_links.dart';
 
 class BootstrapHomePage extends StatelessWidget {
   const BootstrapHomePage({
@@ -343,7 +344,12 @@ class BootstrapHomePage extends StatelessWidget {
             icon: Icons.child_care_outlined,
             color: ScholifyColors.academicNavy,
             child: StreamBuilder<List<StudentDirectoryEntry>>(
-              stream: attendanceRepo.watchStudents(),
+              stream: watchLinkedChildren(
+                syncEngine.database,
+                identity: FamilyIdentity.fromGateway(
+                    syncEngine.pocketbaseGateway),
+                tenantId: tenantContext.tenantId,
+              ),
               builder: (context, snapshot) {
                 final students = snapshot.data ?? const [];
                 if (students.isEmpty) {
@@ -751,83 +757,137 @@ class BootstrapHomePage extends StatelessWidget {
   /// Attendance summary for the first linked student (current month):
   /// percentage plus present/absent/late counts. Used by both the student
   /// ("My Attendance") and guardian dashboards.
+  /// Attendance summary for the family dashboards: the guardian's
+  /// selected (or primary) linked child, or the student's own record.
+  /// Resolution goes through the family link directory — never the
+  /// first student in the school directory.
   Widget _buildMyAttendanceSummary(
       ThemeData theme, ColorScheme scheme, AttendanceRepository repo) {
+    final identity = FamilyIdentity.fromGateway(syncEngine.pocketbaseGateway);
+    final role = tenantContext.role.toLowerCase();
+    if (role == 'student') {
+      return StreamBuilder<StudentDirectoryEntry?>(
+        stream: watchOwnStudentRecord(
+          syncEngine.database,
+          identity: identity,
+          tenantId: tenantContext.tenantId,
+        ),
+        builder: (context, snapshot) {
+          final student = snapshot.data;
+          if (student == null) {
+            return ScholifyEmptyState(
+              icon: Icons.fact_check_outlined,
+              title: 'No attendance records',
+              message:
+                  'Attendance will appear here once the school marks it.',
+            );
+          }
+          return _buildAttendanceSummaryFor(theme, scheme, repo, student);
+        },
+      );
+    }
+    // Guardian (and any other family role): linked children + selection.
     return StreamBuilder<List<StudentDirectoryEntry>>(
-      stream: repo.watchStudents(),
+      stream: watchLinkedChildren(
+        syncEngine.database,
+        identity: identity,
+        tenantId: tenantContext.tenantId,
+      ),
       builder: (context, studentSnapshot) {
-        final students = studentSnapshot.data ?? const [];
-        if (students.isEmpty) {
+        final children = studentSnapshot.data ?? const [];
+        if (children.isEmpty) {
           return ScholifyEmptyState(
             icon: Icons.fact_check_outlined,
             title: 'No attendance records',
             message: 'Attendance will appear here once the school marks it.',
           );
         }
-        final child = students.first;
-        return StreamBuilder<List<StudentAttendanceRecord>>(
-          stream: repo.watchStudentMonth(
-            studentId: child.id,
-            month: DateTime.now(),
-          ),
-          builder: (context, snapshot) {
-            final records = snapshot.data ?? const [];
-            if (records.isEmpty) {
-              return ScholifyEmptyState(
-                icon: Icons.fact_check_outlined,
-                title: 'No attendance records',
-                message:
-                    'Attendance will appear here once the school marks it.',
-              );
-            }
-            final present =
-                records.where((r) => r.status == 'present').length;
-            final absent = records.where((r) => r.status == 'absent').length;
-            final late = records.where((r) => r.status == 'late').length;
-            final pct = (present / records.length * 100).round();
-            return Row(
+        return ValueListenableBuilder<String?>(
+          valueListenable: FamilyChildSelection.selectedStudentId,
+          builder: (context, _, _) {
+            final child = effectiveChild(children)!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: ScholifyColors.scholarTeal.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$pct%',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: ScholifyColors.scholarTeal,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        child.fullName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$present present \u00b7 $absent absent \u00b7 $late late this month',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                if (children.length > 1) ...[
+                  FamilyChildSwitcher(children: children),
+                  const SizedBox(height: 12),
+                ],
+                _buildAttendanceSummaryFor(theme, scheme, repo, child),
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildAttendanceSummaryFor(
+    ThemeData theme,
+    ColorScheme scheme,
+    AttendanceRepository repo,
+    StudentDirectoryEntry child,
+  ) {
+    return StreamBuilder<List<StudentAttendanceRecord>>(
+      stream: repo.watchStudentMonth(
+        studentId: child.id,
+        month: DateTime.now(),
+      ),
+      builder: (context, snapshot) {
+        final records = snapshot.data ?? const [];
+        if (records.isEmpty) {
+          return ScholifyEmptyState(
+            icon: Icons.fact_check_outlined,
+            title: 'No attendance records',
+            message:
+                'Attendance will appear here once the school marks it.',
+          );
+        }
+        final present = records.where((r) => r.status == 'present').length;
+        final absent = records.where((r) => r.status == 'absent').length;
+        final late = records.where((r) => r.status == 'late').length;
+        final pct = (present / records.length * 100).round();
+        return Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: ScholifyColors.scholarTeal.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  '$pct%',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: ScholifyColors.scholarTeal,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    child.fullName,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$present present \u00b7 $absent absent \u00b7 $late late this month',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );

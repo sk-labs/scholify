@@ -692,6 +692,7 @@ class PocketbaseSyncAdapter {
         admissionNo: mapped.admissionNo,
         fullName: mapped.fullName,
         classSection: mapped.classSection,
+        email: mapped.email,
         isActive: mapped.isActive,
         updatedAt: mapped.updatedAt,
       );
@@ -3667,6 +3668,7 @@ class PocketbaseSyncAdapter {
       'name',
     ], fallback: 'Unnamed Student');
     final classSection = _readString(source, ['class_section', 'classSection']);
+    final email = _readString(source, ['email']);
     final isActive = _readBool(source, ['is_active', 'isActive']) ?? true;
     final updatedAt =
         _readDate(source, ['updated_at', 'updatedAt', 'updated']) ??
@@ -3678,6 +3680,7 @@ class PocketbaseSyncAdapter {
       admissionNo: admissionNo,
       fullName: fullName,
       classSection: classSection.isEmpty ? null : classSection,
+      email: email.isEmpty ? null : email,
       isActive: isActive,
       updatedAt: updatedAt,
     );
@@ -5657,6 +5660,7 @@ class _StudentProfileRemote {
     required this.admissionNo,
     required this.fullName,
     required this.classSection,
+    required this.email,
     required this.isActive,
     required this.updatedAt,
   });
@@ -5666,6 +5670,7 @@ class _StudentProfileRemote {
   final String admissionNo;
   final String fullName;
   final String? classSection;
+  final String? email;
   final bool isActive;
   final DateTime updatedAt;
 }

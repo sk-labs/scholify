@@ -7,6 +7,7 @@ import '../../../core/sync/sync_engine.dart';
 import '../../../core/tenant/tenant_context.dart';
 import '../../../core/theme/scholify_colors.dart';
 import '../../../core/widgets/scholify_empty_state.dart';
+import '../../family/family_links.dart';
 import '../data/homework_repository.dart';
 
 /// Guardian/student-facing homework: read-only list of assignments.
@@ -121,45 +122,89 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
     }
   }
 
-  /// Performance view: charts showing homework completion stats.
+  /// Performance view: charts showing homework completion stats for the
+  /// guardian's selected child, or the student's own record.
   Widget _buildPerformanceView(ThemeData theme, bool isGuardian) {
-    // For guardians, show the first linked child's data.
-    // The student ID comes from the student directory.
+    final identity =
+        FamilyIdentity.fromGateway(widget.syncEngine.pocketbaseGateway);
+    final tenantId = widget.tenantContext.tenantId;
+    if (!isGuardian) {
+      return StreamBuilder<StudentDirectoryEntry?>(
+        stream: watchOwnStudentRecord(
+          widget.syncEngine.database,
+          identity: identity,
+          tenantId: tenantId,
+        ),
+        builder: (context, snapshot) {
+          final student = snapshot.data;
+          if (student == null) {
+            return ScholifyEmptyState(
+              icon: Icons.analytics_outlined,
+              title: 'No performance data',
+              message: 'No homework data yet.',
+            );
+          }
+          return _buildStudentPerformance(theme, student.id, isGuardian);
+        },
+      );
+    }
     return StreamBuilder<List<StudentDirectoryEntry>>(
-      stream: widget.syncEngine.database.watchActiveStudentProfiles(
-        tenantId: widget.tenantContext.tenantId ?? '',
+      stream: watchLinkedChildren(
+        widget.syncEngine.database,
+        identity: identity,
+        tenantId: tenantId,
       ),
       builder: (context, studentSnapshot) {
-        final students = studentSnapshot.data ?? const [];
-        if (students.isEmpty) {
+        final children = studentSnapshot.data ?? const [];
+        if (children.isEmpty) {
           return ScholifyEmptyState(
             icon: Icons.analytics_outlined,
             title: 'No performance data',
-            message: isGuardian
-                ? 'Link a child to see homework performance.'
-                : 'No homework data yet.',
+            message: 'Link a child to see homework performance.',
           );
         }
-        final studentId = students.first.id;
-        return StreamBuilder<List<HomeworkAssignmentEntry>>(
-          stream: _repository.watchAssignments(),
-          builder: (context, assignSnapshot) {
-            final assignments = (assignSnapshot.data ?? const [])
-                .where((a) => a.isActive && a.isPublished)
-                .toList();
-            return StreamBuilder<List<HomeworkSubmissionEntry>>(
-              stream: _repository.watchStudentSubmissions(
-                studentId: studentId,
-              ),
-              builder: (context, subSnapshot) {
-                final submissions = subSnapshot.data ?? const [];
-                return _buildPerformanceCharts(
-                  theme,
-                  assignments,
-                  submissions,
-                  isGuardian,
-                );
-              },
+        return ValueListenableBuilder<String?>(
+          valueListenable: FamilyChildSelection.selectedStudentId,
+          builder: (context, _, _) {
+            final child = effectiveChild(children)!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (children.length > 1) ...[
+                  FamilyChildSwitcher(children: children),
+                  const SizedBox(height: 16),
+                ],
+                _buildStudentPerformance(theme, child.id, isGuardian),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStudentPerformance(
+    ThemeData theme,
+    String studentId,
+    bool isGuardian,
+  ) {
+    return StreamBuilder<List<HomeworkAssignmentEntry>>(
+      stream: _repository.watchAssignments(),
+      builder: (context, assignSnapshot) {
+        final assignments = (assignSnapshot.data ?? const [])
+            .where((a) => a.isActive && a.isPublished)
+            .toList();
+        return StreamBuilder<List<HomeworkSubmissionEntry>>(
+          stream: _repository.watchStudentSubmissions(
+            studentId: studentId,
+          ),
+          builder: (context, subSnapshot) {
+            final submissions = subSnapshot.data ?? const [];
+            return _buildPerformanceCharts(
+              theme,
+              assignments,
+              submissions,
+              isGuardian,
             );
           },
         );

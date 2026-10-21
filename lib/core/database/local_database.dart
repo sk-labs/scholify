@@ -440,6 +440,7 @@ class StudentDirectoryEntries extends Table {
   TextColumn get admissionNo => text()();
   TextColumn get fullName => text()();
   TextColumn get classSection => text().nullable()();
+  TextColumn get email => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -1060,7 +1061,7 @@ class AppLocalDatabase extends _$AppLocalDatabase {
     : super(executor ?? createDatabaseExecutor());
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1227,6 +1228,14 @@ class AppLocalDatabase extends _$AppLocalDatabase {
         );
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_audit_log_actor_timestamp ON audit_log_entries(actor_id, timestamp DESC)',
+        );
+      }
+      if (from < 38) {
+        // Student directory gains an email so a student login can be
+        // mapped to its own directory record (family link resolution).
+        await migrator.addColumn(
+          studentDirectoryEntries,
+          studentDirectoryEntries.email,
         );
       }
     },
@@ -3383,6 +3392,7 @@ class AppLocalDatabase extends _$AppLocalDatabase {
     required String admissionNo,
     required String fullName,
     String? classSection,
+    String? email,
     required bool isActive,
     required DateTime updatedAt,
   }) {
@@ -3393,6 +3403,7 @@ class AppLocalDatabase extends _$AppLocalDatabase {
         admissionNo: Value(admissionNo),
         fullName: Value(fullName),
         classSection: Value(classSection),
+        email: Value(email),
         isActive: Value(isActive),
         updatedAt: Value(updatedAt),
       ),

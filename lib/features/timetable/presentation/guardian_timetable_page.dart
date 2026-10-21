@@ -192,7 +192,7 @@ class _GuardianTimetablePageState extends State<GuardianTimetablePage> {
     final scheme = theme.colorScheme;
     final timeLabel = (slot.timeFrom != null && slot.timeTo != null)
         ? '${slot.timeFrom} – ${slot.timeTo}'
-        : 'Period ${slot.periodIndex}';
+        : 'Period ${slot.periodIndex + 1}';
 
     return Card(
       elevation: 0,
@@ -215,7 +215,7 @@ class _GuardianTimetablePageState extends State<GuardianTimetablePage> {
               ),
               child: Center(
                 child: Text(
-                  '${slot.periodIndex}',
+                  '${slot.periodIndex + 1}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: ScholifyColors.academicNavy,
                     fontWeight: FontWeight.w800,

@@ -14015,6 +14015,11 @@ class $StudentDirectoryEntriesTable extends StudentDirectoryEntries
   late final GeneratedColumn<String> classSection = GeneratedColumn<String>(
       'class_section', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _emailMeta = const VerificationMeta('email');
+  @override
+  late final GeneratedColumn<String> email = GeneratedColumn<String>(
+      'email', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isActiveMeta =
       const VerificationMeta('isActive');
   @override
@@ -14034,8 +14039,16 @@ class $StudentDirectoryEntriesTable extends StudentDirectoryEntries
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, tenantId, admissionNo, fullName, classSection, isActive, updatedAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        tenantId,
+        admissionNo,
+        fullName,
+        classSection,
+        email,
+        isActive,
+        updatedAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -14078,6 +14091,10 @@ class $StudentDirectoryEntriesTable extends StudentDirectoryEntries
           classSection.isAcceptableOrUnknown(
               data['class_section']!, _classSectionMeta));
     }
+    if (data.containsKey('email')) {
+      context.handle(
+          _emailMeta, email.isAcceptableOrUnknown(data['email']!, _emailMeta));
+    }
     if (data.containsKey('is_active')) {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
@@ -14105,6 +14122,8 @@ class $StudentDirectoryEntriesTable extends StudentDirectoryEntries
           .read(DriftSqlType.string, data['${effectivePrefix}full_name'])!,
       classSection: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}class_section']),
+      email: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}email']),
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -14125,6 +14144,7 @@ class StudentDirectoryEntry extends DataClass
   final String admissionNo;
   final String fullName;
   final String? classSection;
+  final String? email;
   final bool isActive;
   final DateTime updatedAt;
   const StudentDirectoryEntry(
@@ -14133,6 +14153,7 @@ class StudentDirectoryEntry extends DataClass
       required this.admissionNo,
       required this.fullName,
       this.classSection,
+      this.email,
       required this.isActive,
       required this.updatedAt});
   @override
@@ -14144,6 +14165,9 @@ class StudentDirectoryEntry extends DataClass
     map['full_name'] = Variable<String>(fullName);
     if (!nullToAbsent || classSection != null) {
       map['class_section'] = Variable<String>(classSection);
+    }
+    if (!nullToAbsent || email != null) {
+      map['email'] = Variable<String>(email);
     }
     map['is_active'] = Variable<bool>(isActive);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -14159,6 +14183,8 @@ class StudentDirectoryEntry extends DataClass
       classSection: classSection == null && nullToAbsent
           ? const Value.absent()
           : Value(classSection),
+      email:
+          email == null && nullToAbsent ? const Value.absent() : Value(email),
       isActive: Value(isActive),
       updatedAt: Value(updatedAt),
     );
@@ -14173,6 +14199,7 @@ class StudentDirectoryEntry extends DataClass
       admissionNo: serializer.fromJson<String>(json['admissionNo']),
       fullName: serializer.fromJson<String>(json['fullName']),
       classSection: serializer.fromJson<String?>(json['classSection']),
+      email: serializer.fromJson<String?>(json['email']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -14186,6 +14213,7 @@ class StudentDirectoryEntry extends DataClass
       'admissionNo': serializer.toJson<String>(admissionNo),
       'fullName': serializer.toJson<String>(fullName),
       'classSection': serializer.toJson<String?>(classSection),
+      'email': serializer.toJson<String?>(email),
       'isActive': serializer.toJson<bool>(isActive),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -14197,6 +14225,7 @@ class StudentDirectoryEntry extends DataClass
           String? admissionNo,
           String? fullName,
           Value<String?> classSection = const Value.absent(),
+          Value<String?> email = const Value.absent(),
           bool? isActive,
           DateTime? updatedAt}) =>
       StudentDirectoryEntry(
@@ -14206,6 +14235,7 @@ class StudentDirectoryEntry extends DataClass
         fullName: fullName ?? this.fullName,
         classSection:
             classSection.present ? classSection.value : this.classSection,
+        email: email.present ? email.value : this.email,
         isActive: isActive ?? this.isActive,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -14220,6 +14250,7 @@ class StudentDirectoryEntry extends DataClass
       classSection: data.classSection.present
           ? data.classSection.value
           : this.classSection,
+      email: data.email.present ? data.email.value : this.email,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -14233,6 +14264,7 @@ class StudentDirectoryEntry extends DataClass
           ..write('admissionNo: $admissionNo, ')
           ..write('fullName: $fullName, ')
           ..write('classSection: $classSection, ')
+          ..write('email: $email, ')
           ..write('isActive: $isActive, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -14240,8 +14272,8 @@ class StudentDirectoryEntry extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, tenantId, admissionNo, fullName, classSection, isActive, updatedAt);
+  int get hashCode => Object.hash(id, tenantId, admissionNo, fullName,
+      classSection, email, isActive, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -14251,6 +14283,7 @@ class StudentDirectoryEntry extends DataClass
           other.admissionNo == this.admissionNo &&
           other.fullName == this.fullName &&
           other.classSection == this.classSection &&
+          other.email == this.email &&
           other.isActive == this.isActive &&
           other.updatedAt == this.updatedAt);
 }
@@ -14262,6 +14295,7 @@ class StudentDirectoryEntriesCompanion
   final Value<String> admissionNo;
   final Value<String> fullName;
   final Value<String?> classSection;
+  final Value<String?> email;
   final Value<bool> isActive;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -14271,6 +14305,7 @@ class StudentDirectoryEntriesCompanion
     this.admissionNo = const Value.absent(),
     this.fullName = const Value.absent(),
     this.classSection = const Value.absent(),
+    this.email = const Value.absent(),
     this.isActive = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -14281,6 +14316,7 @@ class StudentDirectoryEntriesCompanion
     required String admissionNo,
     required String fullName,
     this.classSection = const Value.absent(),
+    this.email = const Value.absent(),
     this.isActive = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -14294,6 +14330,7 @@ class StudentDirectoryEntriesCompanion
     Expression<String>? admissionNo,
     Expression<String>? fullName,
     Expression<String>? classSection,
+    Expression<String>? email,
     Expression<bool>? isActive,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -14304,6 +14341,7 @@ class StudentDirectoryEntriesCompanion
       if (admissionNo != null) 'admission_no': admissionNo,
       if (fullName != null) 'full_name': fullName,
       if (classSection != null) 'class_section': classSection,
+      if (email != null) 'email': email,
       if (isActive != null) 'is_active': isActive,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -14316,6 +14354,7 @@ class StudentDirectoryEntriesCompanion
       Value<String>? admissionNo,
       Value<String>? fullName,
       Value<String?>? classSection,
+      Value<String?>? email,
       Value<bool>? isActive,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -14325,6 +14364,7 @@ class StudentDirectoryEntriesCompanion
       admissionNo: admissionNo ?? this.admissionNo,
       fullName: fullName ?? this.fullName,
       classSection: classSection ?? this.classSection,
+      email: email ?? this.email,
       isActive: isActive ?? this.isActive,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -14349,6 +14389,9 @@ class StudentDirectoryEntriesCompanion
     if (classSection.present) {
       map['class_section'] = Variable<String>(classSection.value);
     }
+    if (email.present) {
+      map['email'] = Variable<String>(email.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -14369,6 +14412,7 @@ class StudentDirectoryEntriesCompanion
           ..write('admissionNo: $admissionNo, ')
           ..write('fullName: $fullName, ')
           ..write('classSection: $classSection, ')
+          ..write('email: $email, ')
           ..write('isActive: $isActive, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -33639,6 +33683,7 @@ typedef $$StudentDirectoryEntriesTableCreateCompanionBuilder
   required String admissionNo,
   required String fullName,
   Value<String?> classSection,
+  Value<String?> email,
   Value<bool> isActive,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -33650,6 +33695,7 @@ typedef $$StudentDirectoryEntriesTableUpdateCompanionBuilder
   Value<String> admissionNo,
   Value<String> fullName,
   Value<String?> classSection,
+  Value<String?> email,
   Value<bool> isActive,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -33680,6 +33726,11 @@ class $$StudentDirectoryEntriesTableFilterComposer
 
   ColumnFilters<String> get classSection => $state.composableBuilder(
       column: $state.table.classSection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get email => $state.composableBuilder(
+      column: $state.table.email,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -33719,6 +33770,11 @@ class $$StudentDirectoryEntriesTableOrderingComposer extends OrderingComposer<
 
   ColumnOrderings<String> get classSection => $state.composableBuilder(
       column: $state.table.classSection,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get email => $state.composableBuilder(
+      column: $state.table.email,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -33763,6 +33819,7 @@ class $$StudentDirectoryEntriesTableTableManager extends RootTableManager<
             Value<String> admissionNo = const Value.absent(),
             Value<String> fullName = const Value.absent(),
             Value<String?> classSection = const Value.absent(),
+            Value<String?> email = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -33773,6 +33830,7 @@ class $$StudentDirectoryEntriesTableTableManager extends RootTableManager<
             admissionNo: admissionNo,
             fullName: fullName,
             classSection: classSection,
+            email: email,
             isActive: isActive,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -33783,6 +33841,7 @@ class $$StudentDirectoryEntriesTableTableManager extends RootTableManager<
             required String admissionNo,
             required String fullName,
             Value<String?> classSection = const Value.absent(),
+            Value<String?> email = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -33793,6 +33852,7 @@ class $$StudentDirectoryEntriesTableTableManager extends RootTableManager<
             admissionNo: admissionNo,
             fullName: fullName,
             classSection: classSection,
+            email: email,
             isActive: isActive,
             updatedAt: updatedAt,
             rowid: rowid,
