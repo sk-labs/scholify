@@ -21,14 +21,12 @@ class BootstrapHomePage extends StatelessWidget {
     super.key,
     required this.tenantContext,
     required this.syncEngine,
-    this.onSignOut,
     this.onNavigate,
     this.availableDestinations,
   });
 
   final TenantContext tenantContext;
   final SyncEngine syncEngine;
-  final Future<void> Function()? onSignOut;
 
   /// Navigates the shell to the destination with the given label
   /// (e.g. 'Timetable'). Null in tests/previews — quick actions no-op.
@@ -303,27 +301,6 @@ class BootstrapHomePage extends StatelessWidget {
       ]);
     }
 
-    final signOut = onSignOut;
-    if (signOut != null) {
-      specs.add(
-        _ActionSpec(
-          icon: Icons.logout_outlined,
-          color: ScholifyColors.slate600,
-          title: 'Sign Out',
-          subtitle: 'End this session',
-          onTap: () async {
-            await signOut.call();
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Signed out from this device.'),
-                ),
-              );
-            }
-          },
-        ),
-      );
-    }
 
     return specs;
   }
@@ -427,16 +404,6 @@ class BootstrapHomePage extends StatelessWidget {
               title: 'Notices',
               subtitle: 'School announcements',
               onTap: _navTap('Notices'),
-            ),
-            _ActionSpec(
-              icon: Icons.logout_outlined,
-              color: ScholifyColors.slate600,
-              title: 'Sign Out',
-              subtitle: 'End this session',
-              onTap: () async {
-                final signOut = onSignOut;
-                if (signOut != null) await signOut.call();
-              },
             ),
           ]),
         ],
@@ -553,16 +520,6 @@ class BootstrapHomePage extends StatelessWidget {
               title: 'Notices',
               subtitle: 'School announcements',
               onTap: _navTap('Notices'),
-            ),
-            _ActionSpec(
-              icon: Icons.logout_outlined,
-              color: ScholifyColors.slate600,
-              title: 'Sign Out',
-              subtitle: 'End this session',
-              onTap: () async {
-                final signOut = onSignOut;
-                if (signOut != null) await signOut.call();
-              },
             ),
           ]),
         ],
@@ -721,16 +678,6 @@ class BootstrapHomePage extends StatelessWidget {
               title: 'Notices',
               subtitle: 'School announcements',
               onTap: _navTap('Notices'),
-            ),
-            _ActionSpec(
-              icon: Icons.logout_outlined,
-              color: ScholifyColors.slate600,
-              title: 'Sign Out',
-              subtitle: 'End this session',
-              onTap: () async {
-                final signOut = onSignOut;
-                if (signOut != null) await signOut.call();
-              },
             ),
           ]),
         ],

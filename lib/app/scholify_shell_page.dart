@@ -423,7 +423,6 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         page: BootstrapHomePage(
           tenantContext: widget.tenantContext,
           syncEngine: widget.syncEngine,
-          onSignOut: widget.onSignOut,
           onNavigate: _navigateToLabel,
           availableDestinations: () =>
               _lastDestinations.map((d) => d.label).toSet(),
@@ -747,7 +746,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                   impersonationService: _impersonationService,
                 ),
                 Expanded(
-                  child: _showingProfile && _isFamilyRole()
+                  child: _showingProfile
                       ? GuardianProfilePage(
                           tenantContext: widget.tenantContext,
                           syncEngine: widget.syncEngine,
@@ -777,7 +776,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     ),
                     const VerticalDivider(width: 1),
                     Expanded(
-                      child: _showingProfile && _isFamilyRole()
+                      child: _showingProfile
                           ? GuardianProfilePage(
                               tenantContext: widget.tenantContext,
                               syncEngine: widget.syncEngine,
@@ -889,18 +888,18 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                     ],
                   ),
           ),
-          // Bottom-pinned Profile for guardians/students.
-          if (_isFamilyRole())
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              child: Column(
-                children: [
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  _buildProfileTile(context, inDrawer),
-                ],
-              ),
+          // Bottom-pinned account tile for every role: shows the
+          // signed-in user's name; tapping opens Profile / Logout.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: Column(
+              children: [
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                _buildProfileTile(context, inDrawer),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -1060,11 +1059,37 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
   }
 
   /// Bottom-pinned Profile tile for guardians/students.
+  /// Display name for the signed-in user, from the auth record:
+  /// their name, else the email prefix, else a generic label.
+  String get _currentUserName {
+    final model = widget.syncEngine.pocketbaseGateway.currentAuthModelJson;
+    final name = (model?['name'] as String?)?.trim() ?? '';
+    if (name.isNotEmpty) return name;
+    final email = (model?['email'] as String?)?.trim() ?? '';
+    if (email.contains('@')) return email.split('@').first;
+    return 'My Profile';
+  }
+
+  String get _currentUserRoleLabel {
+    final role = widget.tenantContext.role.replaceAll('_', ' ');
+    if (role.isEmpty) return '';
+    return role
+        .split(' ')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
+
+  /// Bottom-pinned account tile: the signed-in user's name and role.
+  /// Tapping opens a menu with Profile and Logout — the app's single
+  /// sign-out path.
   Widget _buildProfileTile(BuildContext context, bool inDrawer) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final selected = _showingProfile;
     const color = ScholifyColors.academicNavy;
+    final name = _currentUserName;
+    final roleLabel = _currentUserRoleLabel;
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: Material(
@@ -1072,14 +1097,43 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
             ? scheme.primary.withValues(alpha: 0.12)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            setState(() {
-              _showingProfile = true;
-            });
-            if (inDrawer) Navigator.of(context).pop();
+        child: PopupMenuButton<String>(
+          tooltip: 'Account',
+          onSelected: (value) async {
+            if (value == 'profile') {
+              setState(() {
+                _showingProfile = true;
+              });
+              if (inDrawer) Navigator.of(context).pop();
+            } else if (value == 'logout') {
+              if (inDrawer) Navigator.of(context).pop();
+              await widget.onSignOut?.call();
+            }
           },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              value: 'profile',
+              child: Row(
+                children: [
+                  Icon(Icons.person_outlined,
+                      size: 20, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 12),
+                  const Text('Profile'),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'logout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout_outlined,
+                      size: 20, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 12),
+                  const Text('Logout'),
+                ],
+              ),
+            ),
+          ],
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 10),
@@ -1094,33 +1148,48 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
                         : color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    Icons.person_outlined,
-                    size: 20,
-                    color: selected ? Colors.white : color,
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: selected ? Colors.white : color,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    'My Profile',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: selected ? color : scheme.onSurface,
-                      fontWeight: selected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: selected ? color : scheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (roleLabel.isNotEmpty)
+                        Text(
+                          roleLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                if (selected)
-                  Container(
-                    width: 4,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+                Icon(
+                  Icons.expand_more,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),

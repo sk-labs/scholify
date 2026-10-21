@@ -36,6 +36,21 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
   /// True when the signed-in user is a student (shares this page with guardians).
   bool get _isStudent => widget.tenantContext.role == 'student';
 
+  bool get _isGuardian => widget.tenantContext.role == 'guardian';
+
+  /// Family roles must complete contact details (first-login profile
+  /// completion); staff roles may leave them blank.
+  bool get _isFamilyRole => _isStudent || _isGuardian;
+
+  String get _roleLabel {
+    final role = widget.tenantContext.role.replaceAll('_', ' ');
+    if (role.isEmpty) return 'User';
+    return role
+        .split(' ')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -96,8 +111,8 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
         'address': _addressController.text.trim(),
         'profile_completed': true,
       };
-      // Guardians set their relationship with the student; students don't have one.
-      if (!_isStudent) {
+      // Only guardians have a relationship with a student.
+      if (_isGuardian) {
         body['relationship'] = _relationshipController.text.trim();
       }
       await gateway.client.collection('users').update(userId, body: body);
@@ -268,11 +283,11 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty)
+                      (_isFamilyRole && (v == null || v.trim().isEmpty))
                           ? 'Phone is required'
                           : null,
                 ),
-                if (!_isStudent) ...[
+                if (_isGuardian) ...[
                   const SizedBox(height: 16),
                   _buildTextField(
                     theme,
@@ -294,7 +309,7 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
                   icon: Icons.home_outlined,
                   maxLines: 2,
                   validator: (v) =>
-                      (v == null || v.trim().isEmpty)
+                      (_isFamilyRole && (v == null || v.trim().isEmpty))
                           ? 'Address is required'
                           : null,
                 ),
@@ -371,7 +386,7 @@ class _GuardianProfilePageState extends State<GuardianProfilePage> {
                 const SizedBox(height: 4),
                 Text(
                   _nameController.text.isEmpty
-                      ? (_isStudent ? 'Student' : 'Guardian')
+                      ? _roleLabel
                       : _nameController.text,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
