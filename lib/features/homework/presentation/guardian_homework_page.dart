@@ -56,44 +56,97 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
           const SizedBox(height: 16),
           if (_filter == 'performance')
             _buildPerformanceView(theme, isGuardian)
+          else if (isGuardian)
+            _buildAssignmentsList(theme, isGuardian: true)
           else
-            StreamBuilder<List<HomeworkAssignmentEntry>>(
-            stream: _repository.watchAssignments(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              var items = (snapshot.data ?? const [])
-                  .where((a) => a.isActive && a.isPublished)
-                  .toList();
-              items = _applyFilter(items);
-              items.sort((a, b) {
-                final da = a.dueDate ?? DateTime(2100);
-                final db = b.dueDate ?? DateTime(2100);
-                return da.compareTo(db);
-              });
-
-              if (items.isEmpty) {
-                return ScholifyEmptyState(
-                  icon: Icons.assignment_outlined,
-                  title: 'No homework',
-                  message: isGuardian
-                      ? 'No homework assigned to your child right now.'
-                      : 'No homework assigned right now. Enjoy!',
-                );
-              }
-              return Column(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    _buildHomeworkCard(theme, items[i]),
-                    if (i < items.length - 1) const SizedBox(height: 12),
-                  ],
-                ],
-              );
-            },
-          ),
+            _buildStudentAssignments(theme),
         ],
       ),
+    );
+  }
+
+  /// Student assignment list: resolves the student's own record and
+  /// their submissions so each card can show submission state and a
+  /// submit/update action. Falls back to the plain list when the
+  /// account is not mapped to a directory record.
+  Widget _buildStudentAssignments(ThemeData theme) {
+    final identity =
+        FamilyIdentity.fromGateway(widget.syncEngine.pocketbaseGateway);
+    return StreamBuilder<StudentDirectoryEntry?>(
+      stream: watchOwnStudentRecord(
+        widget.syncEngine.database,
+        identity: identity,
+        tenantId: widget.tenantContext.tenantId,
+      ),
+      builder: (context, ownSnapshot) {
+        final student = ownSnapshot.data;
+        if (student == null) {
+          return _buildAssignmentsList(theme, isGuardian: false);
+        }
+        return StreamBuilder<List<HomeworkSubmissionEntry>>(
+          stream: _repository.watchStudentSubmissions(studentId: student.id),
+          builder: (context, subSnapshot) {
+            final byAssignment = <String, HomeworkSubmissionEntry>{
+              for (final s in subSnapshot.data ?? const [])
+                if (s.isActive) s.assignmentId: s,
+            };
+            return _buildAssignmentsList(
+              theme,
+              isGuardian: false,
+              studentId: student.id,
+              submissionsByAssignment: byAssignment,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAssignmentsList(
+    ThemeData theme, {
+    required bool isGuardian,
+    String? studentId,
+    Map<String, HomeworkSubmissionEntry>? submissionsByAssignment,
+  }) {
+    return StreamBuilder<List<HomeworkAssignmentEntry>>(
+      stream: _repository.watchAssignments(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        var items = (snapshot.data ?? const [])
+            .where((a) => a.isActive && a.isPublished)
+            .toList();
+        items = _applyFilter(items);
+        items.sort((a, b) {
+          final da = a.dueDate ?? DateTime(2100);
+          final db = b.dueDate ?? DateTime(2100);
+          return da.compareTo(db);
+        });
+
+        if (items.isEmpty) {
+          return ScholifyEmptyState(
+            icon: Icons.assignment_outlined,
+            title: 'No homework',
+            message: isGuardian
+                ? 'No homework assigned to your child right now.'
+                : 'No homework assigned right now. Enjoy!',
+          );
+        }
+        return Column(
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              _buildHomeworkCard(
+                theme,
+                items[i],
+                studentId: studentId,
+                submission: submissionsByAssignment?[items[i].id],
+              ),
+              if (i < items.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -799,7 +852,11 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
   }
 
   Widget _buildHomeworkCard(
-      ThemeData theme, HomeworkAssignmentEntry item) {
+    ThemeData theme,
+    HomeworkAssignmentEntry item, {
+    String? studentId,
+    HomeworkSubmissionEntry? submission,
+  }) {
     final scheme = theme.colorScheme;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -908,8 +965,198 @@ class _GuardianHomeworkPageState extends State<GuardianHomeworkPage> {
                 ],
               ),
             ],
+            if (studentId != null)
+              _buildSubmissionSection(theme, item, studentId, submission),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Student-only submission area on an assignment card: current state
+  /// (not submitted / submitted / reviewed with grade + feedback) and
+  /// the submit or update action. Resubmission is allowed until the
+  /// teacher reviews the work.
+  Widget _buildSubmissionSection(
+    ThemeData theme,
+    HomeworkAssignmentEntry item,
+    String studentId,
+    HomeworkSubmissionEntry? submission,
+  ) {
+    final scheme = theme.colorScheme;
+    final reviewed =
+        submission != null && (submission.reviewedAt != null);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 14),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        if (submission == null) ...[
+          Row(
+            children: [
+              Icon(Icons.pending_actions_outlined,
+                  size: 16, color: ScholifyColors.achievementAmber),
+              const SizedBox(width: 6),
+              Text(
+                'Not submitted yet',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () =>
+                    _showSubmitDialog(item, studentId, submission),
+                icon: const Icon(Icons.upload_outlined, size: 18),
+                label: const Text('Submit'),
+              ),
+            ],
+          ),
+        ] else ...[
+          Row(
+            children: [
+              Icon(
+                reviewed
+                    ? Icons.grading_outlined
+                    : Icons.check_circle_outline,
+                size: 16,
+                color: ScholifyColors.scholarTeal,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  reviewed
+                      ? 'Reviewed by your teacher'
+                      : 'Submitted${submission.submittedAt != null ? ' · ${DateFormat('d MMM, h:mm a').format(submission.submittedAt!.toLocal())}' : ''}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (reviewed && submission.gradeScore != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color:
+                        ScholifyColors.scholarTeal.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Grade ${submission.gradeScore!.round()}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: ScholifyColors.scholarTeal,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (submission.teacherFeedback != null &&
+              submission.teacherFeedback!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '"${submission.teacherFeedback}"',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          if (!reviewed) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: () =>
+                    _showSubmitDialog(item, studentId, submission),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Update submission'),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Future<void> _showSubmitDialog(
+    HomeworkAssignmentEntry item,
+    String studentId,
+    HomeworkSubmissionEntry? existing,
+  ) async {
+    final controller =
+        TextEditingController(text: existing?.submissionText ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        var text = controller.text;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(item.title),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Write your answer or describe your work below. '
+                      'You can update it until your teacher reviews it.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: controller,
+                      maxLines: 6,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Your submission…',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (v) => setDialogState(() => text = v),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: text.trim().isEmpty
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(true),
+                  child: Text(existing == null ? 'Submit' : 'Update'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (saved != true || !mounted) {
+      controller.dispose();
+      return;
+    }
+    final text = controller.text.trim();
+    controller.dispose();
+    await _repository.submitHomework(
+      assignmentId: item.id,
+      studentId: studentId,
+      submissionText: text,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(existing == null
+            ? 'Homework submitted.'
+            : 'Submission updated.'),
       ),
     );
   }

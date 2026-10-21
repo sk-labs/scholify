@@ -2449,7 +2449,9 @@ class PocketbaseGateway {
           'attachment_url': attachmentUrl,
           'status_label': statusLabel,
           'teacher_feedback': teacherFeedback,
-          'grade_score': gradeScore,
+          // Omit when ungraded: PocketBase stores an explicit null
+          // number as 0, which would read back as a real grade.
+          if (gradeScore != null) 'grade_score': gradeScore,
           'submitted_at': submittedAt,
           'reviewed_at': reviewedAt,
           'is_active': isActive,

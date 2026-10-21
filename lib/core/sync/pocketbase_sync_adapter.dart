@@ -4176,9 +4176,13 @@ class PocketbaseSyncAdapter {
     final statusLabel = _readString(src, ['status_label', 'statusLabel'], fallback: 'submitted');
     final teacherFeedback = _readString(src, ['teacher_feedback', 'teacherFeedback']);
     final gradeScoreRaw = src['grade_score'] ?? src['gradeScore'];
-    final gradeScore = gradeScoreRaw is num ? gradeScoreRaw.toDouble() : null;
+    var gradeScore = gradeScoreRaw is num ? gradeScoreRaw.toDouble() : null;
     final submittedAt = _readDate(src, ['submitted_at', 'submittedAt']);
     final reviewedAt = _readDate(src, ['reviewed_at', 'reviewedAt']);
+    // An unreviewed submission has no grade. PocketBase returns 0
+    // for number fields that were never set, which would otherwise
+    // materialize as a bogus "Grade 0" after the first pull.
+    if (reviewedAt == null) gradeScore = null;
     final isActive = _readBool(src, ['is_active', 'isActive']) ?? true;
     final sourceType = _readString(src, ['source'], fallback: 'remote');
 
