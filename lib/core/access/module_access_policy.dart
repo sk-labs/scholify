@@ -165,6 +165,7 @@ class ModuleAccessPolicy {
         ScholifyModuleFeature.attendance,
         ScholifyModuleFeature.homework,
         ScholifyModuleFeature.timetable,
+        ScholifyModuleFeature.fees,
         ScholifyModuleFeature.exams,
         ScholifyModuleFeature.notices,
         ScholifyModuleFeature.notifications,

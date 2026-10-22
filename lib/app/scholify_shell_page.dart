@@ -26,6 +26,7 @@ import '../features/documents/presentation/document_center_page.dart';
 import '../features/exams/presentation/exam_overview_page.dart';
 import '../features/hostel/presentation/hostel_page.dart';
 import '../features/leave/presentation/leave_requests_page.dart';
+import '../features/fees/presentation/family_fees_page.dart';
 import '../features/fees/presentation/fee_overview_page.dart';
 import '../features/notices/presentation/notice_board_page.dart';
 import '../features/homework/presentation/homework_assignments_page.dart';
@@ -87,12 +88,13 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
         _lastDestinations.indexWhere((d) => d.label == label);
     if (index == -1 || !mounted) return;
     setState(() {
+      _userNavigated = true;
       _selectedIndex = index;
       _showingProfile = false;
     });
   }
   bool _showingProfile = false;
-  bool _familyLandingApplied = false;
+  bool _userNavigated = false;
   late final ImpersonationService _impersonationService;
   final TextEditingController _navSearchController = TextEditingController();
   String _navSearchQuery = '';
@@ -398,6 +400,22 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
     );
   }
 
+  /// Returns the fees page appropriate for the current user's role:
+  /// family roles get the read-only per-student invoice view.
+  Widget _feesPageForRole() {
+    final role = widget.tenantContext.role.toLowerCase();
+    if (role == 'guardian' || role == 'student') {
+      return FamilyFeesPage(
+        tenantContext: widget.tenantContext,
+        syncEngine: widget.syncEngine,
+      );
+    }
+    return FeeOverviewPage(
+      tenantContext: widget.tenantContext,
+      syncEngine: widget.syncEngine,
+    );
+  }
+
   /// Returns the attendance page appropriate for the current user's role.
   /// Guardians get analytics; teachers/staff get the marking interface.
   Widget _attendancePageForRole() {
@@ -527,10 +545,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           label: 'Fees',
           icon: Icons.receipt_long,
         color: ScholifyColors.accentFinance,
-          page: FeeOverviewPage(
-            tenantContext: widget.tenantContext,
-            syncEngine: widget.syncEngine,
-          ),
+          page: _feesPageForRole(),
         section: _ShellSection.operations
       ),
       if (access[ScholifyModuleFeature.attendance] ?? false)
@@ -709,8 +724,11 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
             section: _ShellSection.operations,
           ),
         );
-        if (!_familyLandingApplied) {
-          _familyLandingApplied = true;
+        // Keep the landing pinned to Foundation until the user navigates.
+        // The destination set can grow after this build (the tenant license
+        // syncs in and unlocks more modules), and a one-shot index captured
+        // against the smaller set would land on the wrong page.
+        if (!_userNavigated) {
           _selectedIndex = destinations.length - 1;
         }
       }
@@ -822,6 +840,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
       final target = visible[index];
       final fullIndex = destinations.indexOf(target);
       setState(() {
+        _userNavigated = true;
         _selectedIndex = fullIndex;
         _showingProfile = false;
       });

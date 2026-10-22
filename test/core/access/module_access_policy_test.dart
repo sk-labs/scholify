@@ -43,6 +43,35 @@ void main() {
       expect(resolved[ScholifyModuleFeature.exams], isTrue);
     });
 
+    test('student role keeps fees but loses management modules', () {
+      final resolved = ModuleAccessPolicy.resolve(
+        planCode: 'enterprise',
+        overrides: const <String, bool>{},
+        isSuperAdmin: false,
+        role: 'student',
+      );
+
+      expect(resolved[ScholifyModuleFeature.fees], isTrue);
+      expect(resolved[ScholifyModuleFeature.exams], isTrue);
+      expect(resolved[ScholifyModuleFeature.attendance], isTrue);
+      expect(resolved[ScholifyModuleFeature.students], isFalse);
+      expect(resolved[ScholifyModuleFeature.hostel], isFalse);
+      expect(resolved[ScholifyModuleFeature.transport], isFalse);
+    });
+
+    test('guardian role keeps fees but loses management modules', () {
+      final resolved = ModuleAccessPolicy.resolve(
+        planCode: 'enterprise',
+        overrides: const <String, bool>{},
+        isSuperAdmin: false,
+        role: 'guardian',
+      );
+
+      expect(resolved[ScholifyModuleFeature.fees], isTrue);
+      expect(resolved[ScholifyModuleFeature.students], isFalse);
+      expect(resolved[ScholifyModuleFeature.transport], isFalse);
+    });
+
     test('superadmin bypass enables all modules', () {
       final resolved = ModuleAccessPolicy.resolve(
         planCode: 'starter',
