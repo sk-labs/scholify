@@ -24,6 +24,7 @@ import '../features/bootstrap/presentation/bootstrap_home_page.dart';
 import '../features/curriculum/presentation/curriculum_page.dart';
 import '../features/documents/presentation/document_center_page.dart';
 import '../features/exams/presentation/exam_overview_page.dart';
+import '../features/exams/presentation/family_exams_page.dart';
 import '../features/hostel/presentation/hostel_page.dart';
 import '../features/leave/presentation/leave_requests_page.dart';
 import '../features/fees/presentation/family_fees_page.dart';
@@ -416,6 +417,23 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
     );
   }
 
+  /// Returns the exams page appropriate for the current user's role:
+  /// family roles get the read-only per-student results view instead of
+  /// the staff console (schedule composer, mark editing, analytics).
+  Widget _examsPageForRole() {
+    final role = widget.tenantContext.role.toLowerCase();
+    if (role == 'guardian' || role == 'student') {
+      return FamilyExamsPage(
+        tenantContext: widget.tenantContext,
+        syncEngine: widget.syncEngine,
+      );
+    }
+    return ExamOverviewPage(
+      tenantContext: widget.tenantContext,
+      syncEngine: widget.syncEngine,
+    );
+  }
+
   /// Returns the attendance page appropriate for the current user's role.
   /// Guardians get analytics; teachers/staff get the marking interface.
   Widget _attendancePageForRole() {
@@ -561,10 +579,7 @@ class _ScholifyShellPageState extends State<ScholifyShellPage> {
           label: 'Exams',
           icon: Icons.workspace_premium_outlined,
         color: ScholifyColors.academicNavy,
-          page: ExamOverviewPage(
-            tenantContext: widget.tenantContext,
-            syncEngine: widget.syncEngine,
-          ),
+          page: _examsPageForRole(),
         section: _ShellSection.academics
       ),
       if (access[ScholifyModuleFeature.notices] ?? false)
